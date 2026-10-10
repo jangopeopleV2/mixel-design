@@ -1,4 +1,4 @@
-//! The DesignCraft document model (pure data + serde).
+//! The MIXEL Design document model (pure data + serde).
 //!
 //! A [`Document`] holds spreads of pages, parent ("master") spreads, layers, stories, styles,
 //! swatches, sections and embedded assets. Spreads, items and stories are `Arc`-shared so an

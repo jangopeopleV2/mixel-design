@@ -3,7 +3,7 @@ name = "designcraft-textimport"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft text import: plain text, Word (.docx) and RTF into stories"
+description = "MIXEL Design text import: plain text, Word (.docx) and RTF into stories"
 
 [lints]
 workspace = true

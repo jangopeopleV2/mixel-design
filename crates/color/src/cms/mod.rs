@@ -30,7 +30,7 @@ pub const ADOBE_RGB: &str = "Adobe RGB (1998) compatible";
 pub const DISPLAY_P3: &str = "Display P3";
 pub const PROPHOTO_RGB: &str = "ProPhoto RGB";
 /// Our parametric press model (see [`generic`]). Not an Adobe/ECI profile.
-pub const GENERIC_CMYK: &str = "DesignCraft Generic CMYK (SWOP-like)";
+pub const GENERIC_CMYK: &str = "MIXEL Design Generic CMYK (SWOP-like)";
 /// Profile-free CMYK (`rgb = (1−c)(1−k)` …): uncalibrated, kept for legacy numbers.
 pub const DEVICE_CMYK: &str = "Device CMYK (uncalibrated)";
 

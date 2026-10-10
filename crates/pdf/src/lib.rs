@@ -1,4 +1,4 @@
-//! DesignCraft PDF export (print), written with `krilla`.
+//! MIXEL Design PDF export (print), written with `krilla`.
 //!
 //! [`export_pdf`] writes one PDF page per document page (or per spread) and mirrors the renderer's
 //! walk (`designcraft-render`): layers back to front, parent items first (with page-number markers

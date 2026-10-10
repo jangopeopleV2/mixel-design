@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  DesignCraft MSI (WiX Toolset v5: `dotnet tool install -g wix`). Built by package.ps1:
+  MIXEL Design MSI (WiX Toolset v5: `dotnet tool install -g wix`). Built by package.ps1:
 
     wix build designcraft.wxs -arch x64 -d Version=1.2.3 -d BinDir=... -d IconPath=... -o out.msi
 
-  Per-machine install into Program Files, a Start Menu shortcut, `.pcraft` owned by DesignCraft,
-  and DesignCraft offered under "Open with" for PSD/PSB and the image formats it reads (without
+  Per-machine install into Program Files, a Start Menu shortcut, `.pcraft` owned by MIXEL Design,
+  and MIXEL Design offered under "Open with" for PSD/PSB and the image formats it reads (without
   taking over the user's default app for them).
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package
-      Name="DesignCraft"
-      Manufacturer="Learning Machines LLC"
+      Name="MIXEL Design"
+      Manufacturer="MIXEL"
       Version="$(var.Version)"
       UpgradeCode="49E87D30-BB68-4896-AA1D-F45C833CFC3C"
       Scope="perMachine"
       Compressed="yes"
       Language="1033">
-    <SummaryInformation Description="DesignCraft page layout and publishing" Manufacturer="Learning Machines LLC" />
+    <SummaryInformation Description="MIXEL Design page layout and publishing" Manufacturer="MIXEL" />
     <!-- Same-version upgrades let successive pre-releases of one X.Y.Z replace each other
          (MSI versions are numeric, so 1.2.3-rc.1 and 1.2.3-rc.2 are both 1.2.3). -->
     <MajorUpgrade AllowSameVersionUpgrades="yes"
-        DowngradeErrorMessage="A newer version of DesignCraft is already installed." />
+        DowngradeErrorMessage="A newer version of MIXEL Design is already installed." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
     <Icon Id="DesigncraftIcon.ico" SourceFile="$(var.IconPath)" />
@@ -31,11 +31,11 @@
     <Property Id="ARPHELPLINK" Value="https://discord.gg/artcraft" />
 
     <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="INSTALLFOLDER" Name="DesignCraft" />
+      <Directory Id="INSTALLFOLDER" Name="MIXEL Design" />
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder" />
 
-    <Feature Id="Main" Title="DesignCraft" Level="1">
+    <Feature Id="Main" Title="MIXEL Design" Level="1">
       <ComponentGroupRef Id="DesigncraftFiles" />
     </Feature>
   </Package>
@@ -44,8 +44,8 @@
     <ComponentGroup Id="DesigncraftFiles" Directory="INSTALLFOLDER">
       <Component Id="DesigncraftApp" Guid="DE018EF3-EE87-4E36-9F76-0B7B060A195E">
         <File Id="DesigncraftExe" Source="$(var.BinDir)\designcraft.exe" KeyPath="yes">
-          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="DesignCraft"
-              Description="DesignCraft page layout and publishing" WorkingDirectory="INSTALLFOLDER" Advertise="yes"
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="MIXEL Design"
+              Description="MIXEL Design page layout and publishing" WorkingDirectory="INSTALLFOLDER" Advertise="yes"
               Icon="DesigncraftIcon.ico" IconIndex="0" />
         </File>
 

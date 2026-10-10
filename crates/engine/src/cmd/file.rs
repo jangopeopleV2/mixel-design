@@ -20,7 +20,7 @@ pub fn specs() -> Vec<CommandSpec> {
         cmd!(noundo "file.open", "Open…", ["File"], Some("Cmd+O"),
             "{path} — .designcraft or .idml; the fonts in a `Document Fonts` folder beside it load first → {index, documentFonts: faces loaded, warnings: font files skipped}",
             always, file_open),
-        cmd!(noundo "file.openBytes", "Open Bytes", [], None, "{name, base64} — DesignCraft JSON or an IDML package", always, file_open_bytes),
+        cmd!(noundo "file.openBytes", "Open Bytes", [], None, "{name, base64} — MIXEL Design JSON or an IDML package", always, file_open_bytes),
         cmd!(noundo "file.save", "Save", ["File"], Some("Cmd+S"), "{path?}", has_doc, file_save),
         cmd!(noundo "file.saveAs", "Save As…", ["File"], Some("Cmd+Shift+S"), "{path}", has_doc, file_save),
         cmd!(noundo "file.saveACopy", "Save a Copy…", ["File"], None, "{path} — writes the document without changing which file it is or its unsaved state", has_doc, |s, p| {
@@ -273,7 +273,7 @@ fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
         s.ui_requests.push(crate::UiRequest::Pick { purpose: "place".into(), params: json!({}) });
         return ok();
     };
-    // A page of another layout (IDML or DesignCraft): its objects, as one group.
+    // A page of another layout (IDML or MIXEL Design): its objects, as one group.
     let lname = name.to_lowercase();
     if lname.ends_with(".idml") || lname.ends_with(".designcraft") {
         return place_layout_page(s, p, &name, &bytes);
@@ -527,7 +527,7 @@ fn snippet_export(s: &mut Session, p: &Value) -> Result<Value> {
     }
 }
 
-/// File › Place of an IDML or DesignCraft document: the objects of one page (`layoutPage`,
+/// File › Place of an IDML or MIXEL Design document: the objects of one page (`layoutPage`,
 /// 1-based) grouped, top-left at x/y (default: the source position on the first page).
 fn place_layout_page(s: &mut Session, p: &Value, name: &str, bytes: &[u8]) -> Result<Value> {
     const ID: &str = "file.place";

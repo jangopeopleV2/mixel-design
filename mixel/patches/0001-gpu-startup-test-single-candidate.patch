@@ -1,0 +1,16 @@
+diff --git a/apps/designcraft/src/gpu.rs b/apps/designcraft/src/gpu.rs
+index d8ab9b3..91e4ed1 100644
+--- a/apps/designcraft/src/gpu.rs
++++ b/apps/designcraft/src/gpu.rs
+@@ -373,7 +373,10 @@ mod tests {
+             assert!(line.contains("OpenGL") && line.contains(s.backend.name()) && line.contains("WGPU_BACKEND"), "{line}");
+             assert!(!s.backends().contains(wgpu::Backends::GL));
+         } else {
+-            assert_eq!(s.switched_from, None);
++            // One candidate (macOS: Metal): OpenGL was wgpu's fallback, so the start still says it
++            // moved off OpenGL unless OpenGL is that one candidate.
++            assert_eq!(s.switched_from, Some(Backend::Gl).filter(|b| *b != candidates()[0]));
++            assert_eq!(s.backend, candidates()[0]);
+         }
+         let _ = std::fs::remove_dir_all(path.parent().expect("dir"));
+     }

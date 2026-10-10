@@ -1,4 +1,4 @@
-//! DesignCraft tools: pointer events in → commands and overlays out.
+//! MIXEL Design tools: pointer events in → commands and overlays out.
 //!
 //! Tools never mutate the document. They emit [`Action`]s the engine executes: `Begin` snapshots
 //! the document, each `Preview` re-applies one command on top of the snapshot, `Commit` records

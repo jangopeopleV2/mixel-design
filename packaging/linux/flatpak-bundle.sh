@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Repackage a DesignCraft Linux tarball as a single-file Flatpak bundle:
+# Repackage a MIXEL Design Linux tarball as a single-file Flatpak bundle:
 #
 #   $DIST/designcraft-<version>-linux-<arch>.flatpak
 #
@@ -11,12 +11,12 @@
 # `appstreamcli compose`; the freedesktop runtime and SDK named in the manifest are
 # installed per-user from Flathub. Unless --no-test, the bundle is then installed per-user and
 # `designcraft-cli --version` is run inside the sandbox as a smoke test.
-# Manifest: packaging/linux/flatpak/ai.storyteller.designcraft.bundle.yml.
+# Manifest: packaging/linux/flatpak/ch.mixel.design.bundle.yml.
 set -euo pipefail
 # shellcheck source=../env.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../env.sh"
 HERE="$ROOT/packaging/linux"
-APP_ID=ai.storyteller.designcraft
+APP_ID=ch.mixel.design
 FLATHUB=https://dl.flathub.org/repo/flathub.flatpakrepo
 
 TEST=1
@@ -43,7 +43,7 @@ for tool in flatpak flatpak-builder; do
   command -v "$tool" >/dev/null || { echo "error: $tool not found (apt install flatpak flatpak-builder librsvg2-common)" >&2; exit 1; }
 done
 
-echo "==> DesignCraft $VERSION Flatpak bundle for $ARCH from $(basename "$TARBALL")"
+echo "==> MIXEL Design $VERSION Flatpak bundle for $ARCH from $(basename "$TARBALL")"
 
 WORK="$CARGO_TARGET_DIR/flatpak-bundle"
 rm -rf "$WORK"

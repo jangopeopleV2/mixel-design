@@ -1,4 +1,4 @@
-//! DesignCraft in the browser.
+//! MIXEL Design in the browser.
 //!
 //! Runs the same [`designcraft_ui_egui::DesignApp`] as the desktop app through eframe's web
 //! runner (wgpu: WebGPU where available, WebGL2 otherwise). Build with `trunk build --release`

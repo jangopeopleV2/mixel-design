@@ -3,7 +3,7 @@ name = "designcraft-tools"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft tools: pointer events in, commands and overlays out (Selection, Direct Selection, frames, Type, Hand, Zoom…)"
+description = "MIXEL Design tools: pointer events in, commands and overlays out (Selection, Direct Selection, frames, Type, Hand, Zoom…)"
 
 [lints]
 workspace = true

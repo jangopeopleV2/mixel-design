@@ -3,7 +3,7 @@ name = "designcraft-pdf"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft PDF export (krilla): real text with embedded font subsets, CMYK/spot colour, bleed and printer's marks"
+description = "MIXEL Design PDF export (krilla): real text with embedded font subsets, CMYK/spot colour, bleed and printer's marks"
 
 [lints]
 workspace = true

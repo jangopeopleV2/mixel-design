@@ -17,7 +17,7 @@ pub trait Backend {
     fn describe(&self) -> String;
 }
 
-/// A running DesignCraft app, reached through its loopback control port.
+/// A running MIXEL Design app, reached through its loopback control port.
 pub struct Remote {
     addr: String,
     conn: Option<(BufReader<TcpStream>, TcpStream)>,
@@ -85,7 +85,7 @@ impl Backend for Remote {
                 self.conn = None;
                 self.roundtrip(&line).map_err(|e| {
                     self.conn = None;
-                    format!("DesignCraft app at {} is not reachable: {e}", self.addr)
+                    format!("MIXEL Design app at {} is not reachable: {e}", self.addr)
                 })?
             }
         };
@@ -102,6 +102,6 @@ impl Backend for Remote {
     }
 
     fn describe(&self) -> String {
-        format!("connected to the DesignCraft app at {}", self.addr)
+        format!("connected to the MIXEL Design app at {}", self.addr)
     }
 }

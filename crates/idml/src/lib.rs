@@ -7,7 +7,7 @@
 //! parts.
 //!
 //! ## Coordinates
-//! DesignCraft spreads have their origin at the top-left of the first page (y down). IDML spread
+//! MIXEL Design spreads have their origin at the top-left of the first page (y down). IDML spread
 //! coordinates have their origin at the binding spine (facing pages) or the spread centre
 //! (single-sided documents), vertically centred on the pages; pages are placed by their
 //! `ItemTransform` and every page item's geometry is `PathGeometry` in inner coordinates mapped by

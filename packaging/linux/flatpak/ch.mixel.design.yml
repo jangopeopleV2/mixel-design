@@ -1,16 +1,16 @@
-# Flatpak manifest for DesignCraft, ready for a Flathub submission.
+# Flatpak manifest for MIXEL Design, ready for a Flathub submission.
 #
 # Flatpak builds run offline, so the crate sources must be vendored first. From the repo root:
 #
 #   curl -fsSLO https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/master/cargo/flatpak-cargo-generator.py
 #   python3 flatpak-cargo-generator.py Cargo.lock -o packaging/linux/flatpak/cargo-sources.json
-#   flatpak-builder --user --install --force-clean build-flatpak packaging/linux/flatpak/ai.storyteller.designcraft.yml
-#   flatpak run ai.storyteller.designcraft
+#   flatpak-builder --user --install --force-clean build-flatpak packaging/linux/flatpak/ch.mixel.design.yml
+#   flatpak run ch.mixel.design
 #
 # For Flathub, replace the `dir` source with a `git` source pinned to a release tag and commit.
-# The single-file .flatpak attached to each release comes from ai.storyteller.designcraft.bundle.yml,
+# The single-file .flatpak attached to each release comes from ch.mixel.design.bundle.yml,
 # which repackages the prebuilt release binaries. Keep runtime-version and finish-args identical.
-id: ai.storyteller.designcraft
+id: ch.mixel.design
 runtime: org.freedesktop.Platform
 runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
@@ -32,7 +32,7 @@ finish-args:
   - --filesystem=xdg-documents
   - --filesystem=xdg-pictures
   # Deliberately not granted: network (the optional --control server listens on 127.0.0.1 in
-  # the sandbox; `flatpak override --user --share=network ai.storyteller.designcraft` exposes it
+  # the sandbox; `flatpak override --user --share=network ch.mixel.design` exposes it
   # to host agents) and home/host filesystem access.
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin
@@ -46,14 +46,14 @@ modules:
     build-commands:
       - cargo --offline build --release --locked -p designcraft
       - install -Dm755 target/release/designcraft /app/bin/designcraft
-      - install -Dm644 packaging/linux/ai.storyteller.designcraft.desktop /app/share/applications/ai.storyteller.designcraft.desktop
-      - install -Dm644 packaging/linux/ai.storyteller.designcraft.mime.xml /app/share/mime/packages/ai.storyteller.designcraft.xml
+      - install -Dm644 packaging/linux/ch.mixel.design.desktop /app/share/applications/ch.mixel.design.desktop
+      - install -Dm644 packaging/linux/ch.mixel.design.mime.xml /app/share/mime/packages/ch.mixel.design.xml
       - mkdir -p /app/share/icons && cp -R assets/app-icon/hicolor /app/share/icons/
       - >-
         version=$(awk '/^\[/{p=($0=="[workspace.package]");next} p&&$1=="version"{gsub(/[" ]/,"",$3);print $3;exit}' Cargo.toml);
         install -d /app/share/metainfo;
         sed -e "s/@VERSION@/$version/" -e "s/@DATE@/$(date -u +%Y-%m-%d)/"
-        packaging/linux/ai.storyteller.designcraft.metainfo.xml.in > /app/share/metainfo/ai.storyteller.designcraft.metainfo.xml
+        packaging/linux/ch.mixel.design.metainfo.xml.in > /app/share/metainfo/ch.mixel.design.metainfo.xml
     sources:
       - type: dir
         path: ../../..

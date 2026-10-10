@@ -117,7 +117,7 @@ pub fn export_pdf_with_report(doc: &Document, cache: &Cache, opts: &PdfOptions) 
     let mut pdf = krilla::Document::new_with(settings);
 
     let title = opts.title.clone().unwrap_or_else(|| doc.title.clone());
-    let mut meta = Metadata::new().creator("DesignCraft".into()).producer("DesignCraft".into());
+    let mut meta = Metadata::new().creator("MIXEL Design".into()).producer("MIXEL Design".into());
     if !title.is_empty() {
         meta = meta.title(title.clone());
     }
@@ -246,7 +246,7 @@ pub fn export_pdf_with_report(doc: &Document, cache: &Cache, opts: &PdfOptions) 
 /// comes with its pages' sizes (points).
 pub fn merge_pdfs(parts: &[(Vec<u8>, Vec<(f32, f32)>)], title: Option<&str>) -> Result<Vec<u8>> {
     let mut pdf = krilla::Document::new_with(krilla::SerializeSettings::default());
-    let mut meta = Metadata::new().creator("DesignCraft".into()).producer("DesignCraft".into());
+    let mut meta = Metadata::new().creator("MIXEL Design".into()).producer("MIXEL Design".into());
     if let Some(t) = title {
         meta = meta.title(t.to_string());
     }
@@ -311,7 +311,7 @@ pub fn export_booklet(doc: &Document, cache: &Cache, opts: &BookletOptions) -> R
     let settings = krilla::SerializeSettings { compress_content_streams: true, ..Default::default() };
     let mut pdf = krilla::Document::new_with(settings);
     let title = opts.title.clone().unwrap_or_else(|| doc.title.clone());
-    let mut meta = Metadata::new().creator("DesignCraft".into()).producer("DesignCraft".into());
+    let mut meta = Metadata::new().creator("MIXEL Design".into()).producer("MIXEL Design".into());
     if !title.is_empty() {
         meta = meta.title(title);
     }
@@ -513,7 +513,7 @@ fn regular(c: &Color, rgb_only: bool) -> krilla::color::RegularColor {
     match *c {
         Color::Rgb { r, g, b } => R::Rgb(rgb::Color::new(q(r), q(g), q(b))),
         Color::Cmyk { c, m, y, k } => R::Cmyk(cmyk::Color::new(q(c), q(m), q(y), q(k))),
-        // DesignCraft grey is ink coverage (0 = white); PDF DeviceGray is lightness.
+        // MIXEL Design grey is ink coverage (0 = white); PDF DeviceGray is lightness.
         Color::Gray { k } => R::Luma(luma::Color::new(q(1.0 - k))),
     }
 }
@@ -1172,7 +1172,7 @@ impl Exporter<'_> {
 
     /// A placed PDF as krilla embeds it. krilla refuses a PDF newer than the file it writes (the
     /// export fails at the end with `VersionMismatch(Pdf17)`), and PDF/X-4 is PDF 1.6 while
-    /// VectorCraft and most tools write 1.7. PDF 1.7 changed nothing in how a page draws, so a 1.7
+    /// MIXEL Vector and most tools write 1.7. PDF 1.7 changed nothing in how a page draws, so a 1.7
     /// file goes in as 1.6 (its header relabelled, as `qpdf --force-version=1.6` does). A newer
     /// file is left out and the export fails naming it ([`Exporter::check_placed_versions`]).
     fn placed_pdf(&mut self, asset: &designcraft_doc::Asset) -> Option<krilla::pdf::PdfDocument> {

@@ -22,7 +22,7 @@ use krilla::text::{Font, GlyphId, KrillaGlyph};
 
 use crate::export::{Exporter, solid_fill, tf, to_path};
 
-/// Private-use characters DesignCraft stores for markers (page numbers, section markers, breaks).
+/// Private-use characters MIXEL Design stores for markers (page numbers, section markers, breaks).
 fn is_marker(c: char) -> bool {
     ('\u{E000}'..='\u{E1FF}').contains(&c)
 }

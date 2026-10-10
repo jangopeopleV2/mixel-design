@@ -1,4 +1,4 @@
-//! Help › About DesignCraft: tabs About · Contributors · Models. About is the splash with the
+//! Help › About MIXEL Design: tabs About · Contributors · Models. About is the splash with the
 //! ArtCraft mark, version, and community links (Discord first and largest), plus the other ArtCraft
 //! apps; Contributors and Models are the compiled-in credits (`crate::credits`).
 
@@ -19,12 +19,12 @@ const MARK_PATH: &str = "M104.28,49.49L81.55,0h-31.23l-3.17,4.76L14.75,53.63,0,7
 
 /// The other ArtCraft apps (app-page slug, name, what it is) — same list as the README.
 pub const SIBLINGS: &[(&str, &str, &str)] = &[
-    ("photocraft", "PhotoCraft", "image editing"),
-    ("vectorcraft", "VectorCraft", "vector illustration"),
-    ("filmcraft", "FilmCraft", "video editing, color and sound"),
-    ("lightcraft", "LightCraft", "photo library and raw development"),
-    ("pdfcraft", "PdfCraft", "reading, organizing and protecting PDFs"),
-    ("effectcraft", "EffectCraft", "motion graphics and visual effects"),
+    ("photocraft", "MIXEL Photo", "image editing"),
+    ("vectorcraft", "MIXEL Vector", "vector illustration"),
+    ("filmcraft", "MIXEL Film", "video editing, color and sound"),
+    ("lightcraft", "MIXEL Light", "photo library and raw development"),
+    ("pdfcraft", "MIXEL Print", "reading, organizing and protecting PDFs"),
+    ("effectcraft", "MIXEL Effects", "motion graphics and visual effects"),
 ];
 
 /// The About window's tabs, in `UiState::about_tab` order (`help.about {tab}` names them in lowercase).
@@ -142,7 +142,7 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
             ui.add_space(6.0);
             ui.label(crate::rtl::widget(
                 ui,
-                egui::RichText::new(crate::i18n::tr(&app.ui.language, "DesignCraft")).font(semibold(26.0)).color(t.text_strong),
+                egui::RichText::new(crate::i18n::tr(&app.ui.language, "MIXEL Design")).font(semibold(26.0)).color(t.text_strong),
             ));
             crate::rtl::label(
                 ui,
@@ -180,7 +180,7 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
                 let w = 330.0;
                 ui.add_space(((ui.available_width() - w) / 2.0).max(0.0));
                 for (text, key) in
-                    [("DesignCraft page", "appPage"), ("GitHub", "github"), ("getartcraft.com", "website"), ("Report an issue", "issues")]
+                    [("MIXEL Design page", "appPage"), ("GitHub", "github"), ("getartcraft.com", "website"), ("Report an issue", "issues")]
                 {
                     if link(ui, text, links::get(key).unwrap_or_default(), t.accent) {
                         open = Some(key);

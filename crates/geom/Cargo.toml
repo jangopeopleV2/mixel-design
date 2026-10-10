@@ -3,7 +3,7 @@ name = "designcraft-geom"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft geometry: anchor paths, shapes, units and measurements, hit testing"
+description = "MIXEL Design geometry: anchor paths, shapes, units and measurements, hit testing"
 
 [lints]
 workspace = true

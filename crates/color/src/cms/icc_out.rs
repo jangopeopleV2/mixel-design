@@ -93,7 +93,7 @@ pub fn generic_cmyk_icc() -> &'static [u8] {
         p.lut_b_to_a_colorimetric = Some(b2a.clone());
         p.lut_b_to_a_saturation = Some(b2a);
         p.description = text(super::GENERIC_CMYK);
-        p.copyright = text("No copyright; made by DesignCraft from its parametric press model. Use freely.");
+        p.copyright = text("No copyright; made by MIXEL Design from its parametric press model. Use freely.");
         p.encode().unwrap_or_default()
     })
 }

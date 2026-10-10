@@ -1,4 +1,4 @@
-# DesignCraft app icon
+# MIXEL Design app icon
 
 **A calico cat wearing a polka-dot scarf**, as an engraving-style head-and-shoulders portrait in the
 Crafting Apps' owl-template framing: a full-bleed colour field, the cat in three-quarter view, its
@@ -12,7 +12,7 @@ Exactly three colours:
 |---|---|---|
 | Ink | `#0b0b0c` | Line work and contour |
 | Paper | `#efe9dc` | The figure (the cat and its scarf) |
-| DesignCraft green (app colour) | `#7bb51c` | The full-bleed background field |
+| MIXEL Design green (app colour) | `#7bb51c` | The full-bleed background field |
 
 ## Geometry
 
@@ -37,12 +37,12 @@ craftrules' `assets/logo-options/_tools/vectorize_tile.py`: `designcraft.svg` is
 | `designcraft-macos-512.png` | Runtime Dock icon on macOS (embedded by `apps/designcraft`) |
 | `designcraft.icns` | macOS bundle icon (`CFBundleIconFile`) |
 | `designcraft.ico` | Windows exe icon, 16–256 px (embedded by `apps/designcraft/build.rs`) |
-| `hicolor/<size>/apps/ai.storyteller.designcraft.png` | Linux icon theme, 16–512 px; the 256 px one is also the runtime window icon on Windows and Linux |
-| `hicolor/scalable/apps/ai.storyteller.designcraft.svg` | Linux scalable icon |
+| `hicolor/<size>/apps/ch.mixel.design.png` | Linux icon theme, 16–512 px; the 256 px one is also the runtime window icon on Windows and Linux |
+| `hicolor/scalable/apps/ch.mixel.design.svg` | Linux scalable icon |
 | `LICENSE.txt` | MIT OR Apache-2.0 |
 
-The app ID is `ai.storyteller.designcraft`. It's used for the hicolor icon names, the Wayland app ID and
-`packaging/linux/ai.storyteller.designcraft.desktop`.
+The app ID is `ch.mixel.design`. It's used for the hicolor icon names, the Wayland app ID and
+`packaging/linux/ch.mixel.design.desktop`.
 
 ## Regenerate
 

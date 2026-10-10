@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build and package DesignCraft for FreeBSD:
+# Build and package MIXEL Design for FreeBSD:
 #
 #   $DIST/designcraft-<version>-freebsd-x86_64.tar.gz   a /usr/local-style tree:
 #       designcraft-<version>-freebsd-x86_64/{bin, share/applications, share/icons, share/mime,
@@ -16,7 +16,7 @@ set -euo pipefail
 # shellcheck source=../env.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../env.sh"
 LINUX="$ROOT/packaging/linux"
-APP_ID=ai.storyteller.designcraft
+APP_ID=ch.mixel.design
 
 SKIP_BUILD=0
 DRY_RUN=0
@@ -42,7 +42,7 @@ if [ "$DRY_RUN" = 0 ] && [ "$(uname -s)" != FreeBSD ]; then
 fi
 BASENAME="designcraft-$VERSION-freebsd-$ARCH"
 
-echo "==> DesignCraft $VERSION for FreeBSD $ARCH"
+echo "==> MIXEL Design $VERSION for FreeBSD $ARCH"
 
 # The release VM has 12 GB; full parallelism on the biggest crates runs it out of memory.
 export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-4}"

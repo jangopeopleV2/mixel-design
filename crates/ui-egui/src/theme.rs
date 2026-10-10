@@ -413,10 +413,10 @@ mod japanese_font_tests {
             // (egui's has_glyph reports false for characters of the face that also supplies the
             // replacement glyph, as Source Sans Semibold does in the semibold stack.)
             let body = egui::FontId::new(13.0, egui::FontFamily::Proportional);
-            assert!(fonts.has_glyphs(&body, "DesignCraft"));
+            assert!(fonts.has_glyphs(&body, "MIXEL Design"));
             for family in families() {
                 let font = egui::FontId::new(13.0, family);
-                let galley = fonts.layout_no_wrap("日本語 DesignCraft".into(), font, egui::Color32::WHITE);
+                let galley = fonts.layout_no_wrap("日本語 MIXEL Design".into(), font, egui::Color32::WHITE);
                 assert!(galley.size().x > 0.0);
             }
         });

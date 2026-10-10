@@ -16,7 +16,7 @@
 //! there at the next start means the previous start never got that far — the driver crashed, or
 //! the app was killed meanwhile — so that backend joins `failed`, the next candidate is tried and
 //! the status bar says so. When every candidate has failed the list starts over, and so does a
-//! new DesignCraft version (drivers and wgpu move on). `DESIGNCRAFT_NO_PREFS` records nothing.
+//! new MIXEL Design version (drivers and wgpu move on). `DESIGNCRAFT_NO_PREFS` records nothing.
 
 use std::path::{Path, PathBuf};
 
@@ -83,7 +83,7 @@ pub fn candidates() -> &'static [Backend] {
 /// What `gpu.json` holds.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Record {
-    /// The DesignCraft version that wrote the record; another version starts afresh.
+    /// The MIXEL Design version that wrote the record; another version starts afresh.
     #[serde(default)]
     pub version: String,
     /// The backend of a start that has not presented a frame yet.
@@ -373,7 +373,10 @@ mod tests {
             assert!(line.contains("OpenGL") && line.contains(s.backend.name()) && line.contains("WGPU_BACKEND"), "{line}");
             assert!(!s.backends().contains(wgpu::Backends::GL));
         } else {
-            assert_eq!(s.switched_from, None);
+            // One candidate (macOS: Metal): OpenGL was wgpu's fallback, so the start still says it
+            // moved off OpenGL unless OpenGL is that one candidate.
+            assert_eq!(s.switched_from, Some(Backend::Gl).filter(|b| *b != candidates()[0]));
+            assert_eq!(s.backend, candidates()[0]);
         }
         let _ = std::fs::remove_dir_all(path.parent().expect("dir"));
     }

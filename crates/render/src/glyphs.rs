@@ -60,7 +60,7 @@ pub fn text_line(db: &ScopedFonts<'_>, family: &str, style: &str, text: &str, he
     let (asc, desc) = face.vertical_metrics();
     let baseline = h as f64 / 2.0 + (asc - desc.abs()) / 2.0 * k;
     let mut x = 1.0;
-    // A preview shows what the font draws: not the box DesignCraft draws for a missing glyph.
+    // A preview shows what the font draws: not the box MIXEL Design draws for a missing glyph.
     let boxed = glyphs.iter().any(|g| g.gid == 0) && db.missing_box(&face).is_some();
     for g in &glyphs {
         let outline = db.outline(&face, g.gid);

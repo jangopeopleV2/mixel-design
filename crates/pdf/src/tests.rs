@@ -69,7 +69,7 @@ pub(crate) fn extract_text(bytes: &[u8]) -> Vec<String> {
 
 #[test]
 fn exports_valid_pdf_with_one_page_per_page() {
-    let d = doc_with_text("Hello DesignCraft");
+    let d = doc_with_text("Hello MIXEL Design");
     let bytes = export_pdf(&d, &Cache::new(), &PdfOptions::default()).unwrap();
     assert!(bytes.starts_with(b"%PDF-1.7"));
     let pdf = hayro_syntax::Pdf::new(bytes.clone()).expect("parse");
@@ -78,7 +78,7 @@ fn exports_valid_pdf_with_one_page_per_page() {
 
 #[test]
 fn text_is_real_text() {
-    let d = doc_with_text("Hello DesignCraft — efficient affine");
+    let d = doc_with_text("Hello MIXEL Design — efficient affine");
     let s = uncompressed(&d, PdfOptions::default());
     assert!(s.contains("/FontFile2") || s.contains("/FontFile3"), "font embedded");
     assert!(s.contains("/ToUnicode"));
@@ -87,7 +87,7 @@ fn text_is_real_text() {
     let text = extract_text(&bytes);
     let flat: String = text[0].split_whitespace().collect::<Vec<_>>().join(" ");
     assert!(flat.contains("Hello"), "{flat}");
-    assert!(text[0].contains("DesignCraft"), "{text:?}");
+    assert!(text[0].contains("MIXEL Design"), "{text:?}");
     assert!(text[0].contains("efficient") && text[0].contains("affine"), "ligatures map back: {text:?}");
 }
 
@@ -175,7 +175,7 @@ fn standards() {
     assert!(r.warnings.is_empty(), "{:?}", r.warnings);
     assert!(crate::check_pdfx4(&r.bytes).is_empty());
     let text = String::from_utf8_lossy(&r.bytes).to_string();
-    assert!(text.contains("/OutputIntents[") && text.contains("DesignCraft Generic CMYK"));
+    assert!(text.contains("/OutputIntents[") && text.contains("MIXEL Design Generic CMYK"));
     // A plain export fails the checks; both read with the same pages.
     let plain = export_pdf(&d, &Cache::new(), &PdfOptions::default()).unwrap();
     assert_eq!(hayro_syntax::Pdf::new(r.bytes.clone()).unwrap().pages().len(), hayro_syntax::Pdf::new(plain.clone()).unwrap().pages().len());
@@ -414,7 +414,7 @@ fn missing_glyphs_print_as_boxes() {
     assert_eq!(boxes(&paths), 1, "{paths:?}");
     let a = export_pdf_with_report(&d, &Cache::new(), &PdfOptions { standard: Standard::PdfA2b, ..Default::default() });
     assert!(a.is_ok(), "PDF/A takes the box: {:?}", a.err());
-    // A font whose .notdef is empty: the box DesignCraft draws for it.
+    // A font whose .notdef is empty: the box MIXEL Design draws for it.
     const FAMILY: &str = "DC Test PDF Empty Notdef";
     let font = designcraft_fonts::testing::font_mapping(FAMILY, &[('a', 'a'), ('b', 'b')]).unwrap();
     designcraft_fonts::FontDb::global().add_font(designcraft_fonts::testing::with_empty_notdef(font).unwrap());

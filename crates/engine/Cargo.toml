@@ -3,7 +3,7 @@ name = "designcraft-engine"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft engine: session, documents, history, selection, command registry, tool hosting"
+description = "MIXEL Design engine: session, documents, history, selection, command registry, tool hosting"
 
 [lints]
 workspace = true

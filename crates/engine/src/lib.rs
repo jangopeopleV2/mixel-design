@@ -1,4 +1,4 @@
-//! The DesignCraft engine façade.
+//! The MIXEL Design engine façade.
 //!
 //! Every user-visible action is a command with a stable id (`frame.create`, `text.insert`,
 //! `layout.pages.insert`…) and JSON parameters. The egui UI, the CLI, the control channel and MCP

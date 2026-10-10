@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build and package DesignCraft for Linux (<arch> is x86_64 or aarch64):
+# Build and package MIXEL Design for Linux (<arch> is x86_64 or aarch64):
 #
 #   $DIST/designcraft-<version>-linux-<arch>.AppImage  any distro with glibc >= the build host's
 #   $DIST/designcraft-<version>-linux-<arch>.AppImage.zsync  delta updates (needs zsyncmake)
@@ -17,7 +17,7 @@ set -euo pipefail
 # shellcheck source=../env.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../env.sh"
 HERE="$ROOT/packaging/linux"
-APP_ID=ai.storyteller.designcraft
+APP_ID=ch.mixel.design
 
 SKIP_BUILD=0
 FORMATS="appimage deb rpm tar"
@@ -36,10 +36,10 @@ case "$ARCH" in
   aarch64 | arm64) ARCH=aarch64; DEB_ARCH=arm64 ;;
   *) echo "unsupported architecture $ARCH" >&2; exit 2 ;;
 esac
-export DESIGNCRAFT_MAINTAINER="${DESIGNCRAFT_MAINTAINER:-DesignCraft maintainers <designcraft@storyteller.ai>}"
+export DESIGNCRAFT_MAINTAINER="${DESIGNCRAFT_MAINTAINER:-MIXEL Design maintainers <designcraft@storyteller.ai>}"
 BASENAME="designcraft-$VERSION-linux-$ARCH"
 
-echo "==> DesignCraft $VERSION for Linux $ARCH ($FORMATS)"
+echo "==> MIXEL Design $VERSION for Linux $ARCH ($FORMATS)"
 
 if [ "$SKIP_BUILD" = 0 ]; then
   (cd "$ROOT" && cargo build --release --locked -p designcraft -p designcraft-cli)
@@ -99,7 +99,7 @@ if has appimage; then
     x86_64) APPIMAGETOOL_SHA256=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0 ;;
     aarch64) APPIMAGETOOL_SHA256=f0837e7448a0c1e4e650a93bb3e85802546e60654ef287576f46c71c126a9158 ;;
   esac
-  APPDIR="$WORK/DesignCraft.AppDir"
+  APPDIR="$WORK/MIXEL Design.AppDir"
   cp -R "$STAGE" "$APPDIR"
   mv "$APPDIR/usr/share/doc" "$WORK/doc-unused"
   ln -s usr/bin/designcraft "$APPDIR/AppRun"

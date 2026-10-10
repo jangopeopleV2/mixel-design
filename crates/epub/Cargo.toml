@@ -3,7 +3,7 @@ name = "designcraft-epub"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft EPUB 3 (reflowable) export: stories in reading order, CSS from styles, images"
+description = "MIXEL Design EPUB 3 (reflowable) export: stories in reading order, CSS from styles, images"
 
 [lints]
 workspace = true

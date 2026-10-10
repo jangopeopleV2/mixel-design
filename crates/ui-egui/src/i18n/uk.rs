@@ -1,6 +1,6 @@
 //! Ukrainian interface translations; publishing terms are reviewed in context.
 //! Common phrases are adapted from the MIT OR Apache-2.0 ArtCraft sibling catalogs
-//! (VectorCraft, PhotoCraft, WordCraft and DeckCraft); see ASSETS.md for pinned sources.
+//! (MIXEL Vector, MIXEL Photo, WordCraft and DeckCraft); see ASSETS.md for pinned sources.
 pub(super) const TABLE: &[(&str, &str)] = &[
     ("File", "Файл"),
     ("Edit", "Редагування"),
@@ -398,7 +398,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("Show / hide text with this condition", "Показати / приховати текст із цією умовою"),
     ("Spreads of up to 10 pages", "Розвороти до 10 сторінок"),
     ("for", "для"),
-    ("About DesignCraft", "Про DesignCraft"),
+    ("About MIXEL Design", "Про MIXEL Design"),
     ("Accept All Changes", "Прийняти всі зміни"),
     ("Activate Document", "Активувати документ"),
     ("Add Anchor Point", "Додати опорну точку"),
@@ -469,8 +469,8 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("Delete Item", "Видалити елемент"),
     ("Delete Text Variable", "Видалити текстову змінну"),
     ("Delete Workspace…", "Видалити робоче середовище…"),
-    ("DesignCraft Website…", "Вебсайт DesignCraft…"),
-    ("DesignCraft on GitHub…", "DesignCraft на GitHub…"),
+    ("MIXEL Design Website…", "Вебсайт MIXEL Design…"),
+    ("MIXEL Design on GitHub…", "MIXEL Design на GitHub…"),
     ("Detach All Objects from Parent", "Від’єднати всі об’єкти від шаблону"),
     ("Directional Feather", "Спрямоване розтушовування"),
     ("Distribute", "Розподілити"),
@@ -830,7 +830,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("Crop Amount", "Величина обрізання"),
     ("Cross-Reference Format", "Формат перехресного посилання"),
     ("Delete Workspace", "Видалити робоче середовище"),
-    ("DesignCraft", "DesignCraft"),
+    ("MIXEL Design", "MIXEL Design"),
     ("Display Performance", "Якість відображення"),
     ("Document Grid", "Сітка документа"),
     ("Document Recovery Data", "Дані відновлення документа"),
@@ -927,7 +927,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("User Dictionary (this document)", "Словник користувача (цей документ)"),
     ("Utilities", "Допоміжні інструменти"),
     ("Variable Font", "Варіативний шрифт"),
-    ("Welcome to DesignCraft", "Вітаємо в DesignCraft"),
+    ("Welcome to MIXEL Design", "Вітаємо в MIXEL Design"),
     ("When Scaling", "Під час масштабування"),
     ("[Basic] (working) ▾", "[Основний] (робочий) ▾"),
     ("[Black] Overprint", "Накладання [Чорного]"),

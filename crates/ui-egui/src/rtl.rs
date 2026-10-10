@@ -481,7 +481,7 @@ mod tests {
     #[test]
     fn isolates_arabic_names_from_latin_brand_and_zoom_suffix() {
         with_fonts(|ctx| {
-            for text in [format!("DesignCraft — {}", isolate("ملف (PDF 123) جديد")), format!("{} @ 89%", isolate("ملف (PDF 123) جديد"))]
+            for text in [format!("MIXEL Design — {}", isolate("ملف (PDF 123) جديد")), format!("{} @ 89%", isolate("ملف (PDF 123) جديد"))]
             {
                 let galley = plain(ctx, &text, FontId::proportional(15.0), Color32::WHITE);
                 let glyphs = &galley.rows[0].glyphs;

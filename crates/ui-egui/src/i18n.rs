@@ -698,7 +698,7 @@ const TABLE: &[(&str, [&str; 5])] = &[
         ["Spreads of up to 10 pages", "Spreads of up to 10 pages", "Spreads of up to 10 pages", "Spreads of up to 10 pages", "最多10页的跨页"],
     ),
     ("for", ["for", "pour", "por", "に対して", "行"]),
-    ("About DesignCraft", ["About DesignCraft", "About DesignCraft", "About DesignCraft", "About DesignCraft", "关于 DesignCraft"]),
+    ("About MIXEL Design", ["About MIXEL Design", "About MIXEL Design", "About MIXEL Design", "About MIXEL Design", "关于 MIXEL Design"]),
     ("Accept All Changes", ["Accept All Changes", "Accept All Changes", "Accept All Changes", "Accept All Changes", "接受所有更改"]),
     ("Activate Document", ["Activate Document", "Activate Document", "Activate Document", "Activate Document", "激活文档"]),
     ("Add Anchor Point", ["Add Anchor Point", "Add Anchor Point", "Add Anchor Point", "Add Anchor Point", "添加锚点"]),
@@ -879,10 +879,10 @@ const TABLE: &[(&str, [&str; 5])] = &[
     ("Delete Item", ["Delete Item", "Delete Item", "Delete Item", "Delete Item", "删除项目"]),
     ("Delete Text Variable", ["Delete Text Variable", "Delete Text Variable", "Delete Text Variable", "Delete Text Variable", "删除文本变量"]),
     ("Delete Workspace…", ["Delete Workspace…", "Delete Workspace…", "Delete Workspace…", "Delete Workspace…", "删除工作区…"]),
-    ("DesignCraft Website…", ["DesignCraft Website…", "DesignCraft Website…", "DesignCraft Website…", "DesignCraft Website…", "DesignCraft 网站…"]),
+    ("MIXEL Design Website…", ["MIXEL Design Website…", "MIXEL Design Website…", "MIXEL Design Website…", "MIXEL Design Website…", "MIXEL Design 网站…"]),
     (
-        "DesignCraft on GitHub…",
-        ["DesignCraft on GitHub…", "DesignCraft on GitHub…", "DesignCraft on GitHub…", "DesignCraft on GitHub…", "DesignCraft 在 GitHub 上…"],
+        "MIXEL Design on GitHub…",
+        ["MIXEL Design on GitHub…", "MIXEL Design on GitHub…", "MIXEL Design on GitHub…", "MIXEL Design on GitHub…", "MIXEL Design 在 GitHub 上…"],
     ),
     (
         "Detach All Objects from Parent",
@@ -1513,7 +1513,7 @@ const TABLE: &[(&str, [&str; 5])] = &[
         ["Cross-Reference Format", "Cross-Reference Format", "Cross-Reference Format", "Cross-Reference Format", "交叉引用格式"],
     ),
     ("Delete Workspace", ["Delete Workspace", "Delete Workspace", "Delete Workspace", "Delete Workspace", "删除工作区"]),
-    ("DesignCraft", ["DesignCraft", "DesignCraft", "DesignCraft", "DesignCraft", "DesignCraft"]),
+    ("MIXEL Design", ["MIXEL Design", "MIXEL Design", "MIXEL Design", "MIXEL Design", "MIXEL Design"]),
     ("Display Performance", ["Display Performance", "Display Performance", "Display Performance", "Display Performance", "显示性能"]),
     ("Document Grid", ["Document Grid", "Document Grid", "Document Grid", "Document Grid", "文档网格"]),
     (
@@ -1854,8 +1854,8 @@ const TABLE: &[(&str, [&str; 5])] = &[
     ("Utilities", ["Utilities", "Utilities", "Utilities", "Utilities", "实用程序"]),
     ("Variable Font", ["Variable Font", "Variable Font", "Variable Font", "Variable Font", "可变字体"]),
     (
-        "Welcome to DesignCraft",
-        ["Welcome to DesignCraft", "Welcome to DesignCraft", "Welcome to DesignCraft", "Welcome to DesignCraft", "欢迎使用 DesignCraft"],
+        "Welcome to MIXEL Design",
+        ["Welcome to MIXEL Design", "Welcome to MIXEL Design", "Welcome to MIXEL Design", "Welcome to MIXEL Design", "欢迎使用 MIXEL Design"],
     ),
     ("When Scaling", ["When Scaling", "When Scaling", "When Scaling", "When Scaling", "缩放时"]),
     ("[Basic] (working) ▾", ["[Basic] (working) ▾", "[Basic] (working) ▾", "[Basic] (working) ▾", "[Basic] (working) ▾", "[基本] (工作区) ▾"]),

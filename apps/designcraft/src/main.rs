@@ -1,4 +1,4 @@
-//! DesignCraft desktop app.
+//! MIXEL Design desktop app.
 //!
 //! Usage: `designcraft [--control <port>] [--sample] [files…]`
 //!
@@ -70,9 +70,9 @@ impl eframe::App for App {
 /// The per-user settings directory: `ui.json`, `prefs.json`, `gpu.json` and `logs/` live here.
 fn config_dir() -> Option<std::path::PathBuf> {
     if cfg!(target_os = "macos") {
-        std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join("Library/Application Support/DesignCraft"))
+        std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join("Library/Application Support/MIXEL Design"))
     } else if cfg!(windows) {
-        std::env::var_os("APPDATA").map(|a| std::path::PathBuf::from(a).join("DesignCraft"))
+        std::env::var_os("APPDATA").map(|a| std::path::PathBuf::from(a).join("MIXEL Design"))
     } else {
         std::env::var_os("XDG_CONFIG_HOME")
             .map(std::path::PathBuf::from)
@@ -181,8 +181,8 @@ fn open_filters(purpose: &str) -> &'static [OpenFilter] {
             OpenFilter { name: "Video and sound", extensions: &["mp4", "m4v", "mov", "webm", "mp3", "m4a", "wav", "ogg"] },
         ],
         _ => &[
-            OpenFilter { name: "DesignCraft or IDML", extensions: &["designcraft", "idml"] },
-            OpenFilter { name: "DesignCraft", extensions: &["designcraft"] },
+            OpenFilter { name: "MIXEL Design or IDML", extensions: &["designcraft", "idml"] },
+            OpenFilter { name: "MIXEL Design", extensions: &["designcraft"] },
             OpenFilter { name: "InDesign Markup (IDML)", extensions: &["idml"] },
         ],
     }
@@ -205,7 +205,7 @@ fn services() -> Services {
 }
 
 /// Desktop app ID: the Linux `.desktop` file name and hicolor icon name (Wayland matches windows by it).
-const APP_ID: &str = "ai.storyteller.designcraft";
+const APP_ID: &str = "ch.mixel.design";
 
 /// The window, Dock, taskbar and Alt-Tab icon. macOS gets Apple's icon grid (transparent margin);
 /// elsewhere the full tile. Regenerate with `packaging/icons.sh`.
@@ -213,7 +213,7 @@ fn app_icon() -> Option<egui::IconData> {
     #[cfg(target_os = "macos")]
     let png: &[u8] = include_bytes!("../../../assets/app-icon/designcraft-macos-512.png");
     #[cfg(not(target_os = "macos"))]
-    let png: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/ai.storyteller.designcraft.png");
+    let png: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/ch.mixel.design.png");
     eframe::icon_data::from_png_bytes(png).map_err(|e| log::warn!("app icon: {e}")).ok()
 }
 
@@ -251,14 +251,14 @@ fn main() -> eframe::Result {
     // leaves no file behind. Records logged until now are written to it first.
     if let (Some(logger), Some(dir)) = (logger, config_dir()) {
         match logger.attach_dir(&dir.join("logs")) {
-            Ok(path) => log::info!("DesignCraft {}, log file {}", env!("CARGO_PKG_VERSION"), path.display()),
+            Ok(path) => log::info!("MIXEL Design {}, log file {}", env!("CARGO_PKG_VERSION"), path.display()),
             // Standard error only by now (`attach_dir` gave up on the file); unlike `eprintln!`, never panics.
             Err(e) => log::warn!("no log file: {e}"),
         }
     }
     let mut options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("DesignCraft")
+            .with_title("MIXEL Design")
             .with_inner_size([1440.0, 900.0])
             .with_min_inner_size([900.0, 560.0])
             .with_drag_and_drop(true)
@@ -290,7 +290,7 @@ fn main() -> eframe::Result {
         }));
     }
     eframe::run_native(
-        "DesignCraft",
+        "MIXEL Design",
         options,
         Box::new(move |cc| {
             let mut gpu = gpu;

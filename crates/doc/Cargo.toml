@@ -3,7 +3,7 @@ name = "designcraft-doc"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft document model: spreads, pages, parents, layers, frames, stories, styles, swatches"
+description = "MIXEL Design document model: spreads, pages, parents, layers, frames, stories, styles, swatches"
 
 [lints]
 workspace = true
