@@ -4,6 +4,9 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 
 pub fn config_dir() -> Option<PathBuf> {
+    if designcraft_engine::macos_mas::enabled() {
+        return designcraft_engine::macos_mas::container_dir("MIXEL Design");
+    }
     config_dir_with(std::env::consts::OS, |key| std::env::var_os(key))
 }
 
@@ -22,6 +25,9 @@ fn config_dir_with(os: &str, env: impl Fn(&str) -> Option<OsString>) -> Option<P
 }
 
 pub fn recovery_dir() -> Option<PathBuf> {
+    if designcraft_engine::macos_mas::enabled() {
+        return config_dir().map(|p| p.join("Recovery")).and_then(own_run);
+    }
     recovery_dir_with(std::env::var_os("DESIGNCRAFT_CONFIG_DIR"), designcraft_engine::recovery::default_dir).and_then(own_run)
 }
 

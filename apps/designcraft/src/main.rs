@@ -11,9 +11,14 @@
 #![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+#[cfg(target_os = "macos")]
+mod apple_events;
+#[cfg(not(all(target_os = "macos", feature = "mac-app-store")))]
 mod control_server;
 mod gpu;
 mod logging;
+#[cfg(all(target_os = "macos", feature = "mac-app-store"))]
+mod native_dialogs;
 #[cfg(target_os = "macos")]
 mod native_menu;
 mod profile;
@@ -21,8 +26,20 @@ mod profile;
 use designcraft_engine::Session;
 use designcraft_ui_egui::{DesignApp, Services};
 
+#[derive(Default)]
+struct NativeOpens {
+    showing: bool,
+    pending: Vec<(std::path::PathBuf, std::sync::mpsc::Receiver<designcraft_ui_egui::PickAnswer>)>,
+}
+type PendingOpens = std::sync::Arc<std::sync::Mutex<NativeOpens>>;
+
 struct App {
     app: DesignApp,
+    pending_opens: PendingOpens,
+    #[cfg(all(target_os = "macos", feature = "mac-app-store"))]
+    startup_files: Vec<String>,
+    #[cfg(target_os = "macos")]
+    apple_events: apple_events::Opened,
     #[cfg(target_os = "macos")]
     menu: Option<native_menu::NativeMenu>,
     /// The graphics start in progress (`gpu.json`) until a frame has been presented; see `gpu`.
@@ -42,6 +59,38 @@ impl eframe::App for App {
             self.startup = None;
         }
         self.frames = self.frames.saturating_add(1);
+        let pending = std::mem::take(&mut self.pending_opens.lock().unwrap_or_else(std::sync::PoisonError::into_inner).pending);
+        for (path, answer) in pending {
+            let result = match answer.try_recv() {
+                Ok(Ok(Some(folder))) if path.starts_with(&folder) => Ok(path.to_string_lossy().into_owned()),
+                Ok(Ok(Some(_))) => {
+                    Err("The selected folder does not contain this document. Open it again and choose its containing folder.".to_owned())
+                }
+                Ok(Ok(None)) => Err("Opening was cancelled; the existing documents are unchanged.".to_owned()),
+                Ok(Err(error)) => Err(error),
+                Err(std::sync::mpsc::TryRecvError::Empty) => {
+                    self.pending_opens.lock().unwrap_or_else(std::sync::PoisonError::into_inner).pending.push((path, answer));
+                    continue;
+                }
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("The document-folder chooser stopped before it could answer".to_owned()),
+            };
+            self.pending_opens.lock().unwrap_or_else(std::sync::PoisonError::into_inner).showing = false;
+            match result {
+                Ok(path) => {
+                    let _ = self.app.open_file("file.open", serde_json::json!({"path": path}));
+                }
+                Err(error) => self.app.status(error),
+            }
+        }
+        #[cfg(all(target_os = "macos", feature = "mac-app-store"))]
+        if native_dialogs::running()
+            && !self.startup_files.is_empty()
+            && self.pending_opens.lock().unwrap_or_else(std::sync::PoisonError::into_inner).pending.is_empty()
+        {
+            let file = self.startup_files.remove(0);
+            let _ = self.app.open_file("file.open", serde_json::json!({"path": file}));
+            ctx.request_repaint();
+        }
         #[cfg(target_os = "macos")]
         {
             if self.menu.is_none() && std::env::var_os("DESIGNCRAFT_NO_NATIVE_MENU").is_none() {
@@ -51,9 +100,14 @@ impl eframe::App for App {
                 m.poll(&mut self.app, ctx);
             }
         }
+        for error in designcraft_engine::macos_mas::poll() {
+            self.app.status(error);
+        }
         self.app.logic(ctx);
     }
     fn raw_input_hook(&mut self, _ctx: &egui::Context, raw: &mut egui::RawInput) {
+        #[cfg(target_os = "macos")]
+        self.apple_events.feed(true, _ctx, raw);
         self.app.raw_input_hook(raw);
     }
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
@@ -201,16 +255,78 @@ fn open_filters(purpose: &str) -> &'static [OpenFilter] {
 fn services() -> Services {
     Services {
         pick_open: Some(Box::new(|purpose: &str| {
+            if designcraft_engine::macos_mas::enabled() {
+                return None;
+            }
             let mut dialog = rfd::FileDialog::new();
             for filter in open_filters(purpose) {
                 dialog = dialog.add_filter(filter.name, filter.extensions);
             }
-            dialog.pick_file().map(|p| p.to_string_lossy().to_string())
+            dialog.pick_file().and_then(|p| designcraft_engine::macos_mas::picked(p, false)).map(|p| p.to_string_lossy().into_owned())
         })),
-        pick_save: Some(Box::new(|name: &str| rfd::FileDialog::new().set_file_name(name).save_file().map(|p| p.to_string_lossy().to_string()))),
-        read: Some(Box::new(|p: &str| std::fs::read(p).map_err(|e| e.to_string()))),
+        pick_save: Some(Box::new(|name: &str| {
+            if designcraft_engine::macos_mas::enabled() {
+                return None;
+            }
+            rfd::FileDialog::new()
+                .set_file_name(name)
+                .save_file()
+                .and_then(|p| designcraft_engine::macos_mas::picked(p, true))
+                .map(|p| p.to_string_lossy().into_owned())
+        })),
+        read: Some(Box::new(|p: &str| {
+            let path = designcraft_engine::macos_mas::resolve(p)?;
+            std::fs::read(path).map_err(|e| e.to_string())
+        })),
         write: Some(Box::new(|p: &str, b: &[u8]| designcraft_engine::atomic::write_atomic(std::path::Path::new(p), b).map_err(|e| e.to_string()))),
         ..Default::default()
+    }
+}
+
+/// The native sandbox folder sheet delivers its answer on a later frame. A file grant
+/// never implies adjacent-link or Document Fonts access, and cancellation opens nothing.
+fn services_with_access(cc: &eframe::CreationContext<'_>, pending: PendingOpens) -> Services {
+    let services = services();
+    #[cfg(all(target_os = "macos", feature = "mac-app-store"))]
+    {
+        use designcraft_engine::macos_mas;
+        use designcraft_ui_egui::NativePick;
+        use winit::raw_window_handle::{HasDisplayHandle as _, HasWindowHandle as _};
+        let mut services = services;
+        services.pick_open = None;
+        services.pick_save = None;
+        let parent = (cc.window_handle().is_ok() && cc.display_handle().is_ok()).then(|| rfd::AsyncFileDialog::new().set_parent(cc));
+        let busy = native_dialogs::Busy::default();
+        let native_parent = parent.clone();
+        let native_busy = busy.clone();
+        let context = cc.egui_ctx.clone();
+        services.pick_native = Some(Box::new(move |request| native_dialogs::start(request, native_parent.as_ref(), &native_busy, context.clone())));
+        let context = cc.egui_ctx.clone();
+        services.prepare_open = Some(Box::new(move |path| {
+            let path = macos_mas::resolve(path)?;
+            let folder = path.parent().ok_or("The document has no containing folder")?;
+            if macos_mas::directory_granted(folder) {
+                return Ok(Some(path.to_string_lossy().into_owned()));
+            }
+            let mut state = pending.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            if state.showing {
+                return Err("Another document-folder dialog is open. Finish it before opening another document.".into());
+            }
+            let request = NativePick::Folder {
+                title: "Choose the document folder for linked files and Document Fonts".into(),
+                initial: Some(folder.to_string_lossy().into_owned()),
+            };
+            let answer = native_dialogs::start(request, parent.as_ref(), &busy, context.clone())?;
+            state.showing = true;
+            state.pending.push((path, answer));
+            Ok(None)
+        }));
+        services
+    }
+    #[cfg(not(all(target_os = "macos", feature = "mac-app-store")))]
+    {
+        let _ = (cc, pending);
+        services
     }
 }
 
@@ -256,6 +372,15 @@ fn main() -> eframe::Result {
             }
             _ => files.push(a),
         }
+    }
+    for error in designcraft_engine::macos_mas::initialize("MIXEL Design") {
+        log::warn!("{error}");
+    }
+    if designcraft_engine::macos_mas::enabled() && designcraft_engine::macos_mas::container_dir("MIXEL Design").is_none() {
+        return Err(eframe::Error::AppCreation("Launch the signed MIXEL Design App Store application bundle to use its private container".into()));
+    }
+    if designcraft_engine::macos_mas::enabled() && control_port.take().is_some() {
+        log::warn!("The control server is unavailable in the Mac App Store build.");
     }
     // The log file lives under the settings directory; opened after the arguments, so `--version`
     // leaves no file behind. Records logged until now are written to it first.
@@ -308,6 +433,10 @@ fn main() -> eframe::Result {
             builder.with_close_requested_on_terminate(true);
         }));
     }
+    #[cfg(target_os = "macos")]
+    let apple_events = apple_events::AppleEvents::install();
+    #[cfg(target_os = "macos")]
+    let apple_events = &apple_events;
     eframe::run_native(
         "MIXEL Design",
         options,
@@ -325,7 +454,8 @@ fn main() -> eframe::Result {
             // Crash recovery: reopen what a previous run left unsaved, then keep it current.
             session.recovery_dir = profile::recovery_dir();
             let recovered = session.execute("file.recovery.open", &serde_json::json!({})).ok();
-            let mut app = DesignApp::new(session, services());
+            let pending_opens = PendingOpens::default();
+            let mut app = DesignApp::new(session, services_with_access(cc, pending_opens.clone()));
             if let Some(line) = gpu.as_ref().and_then(gpu::Startup::status_line) {
                 app.status(line);
             }
@@ -335,6 +465,7 @@ fn main() -> eframe::Result {
             }
             load_prefs(&mut app);
             app.integrated_titlebar = cfg!(target_os = "macos");
+            #[cfg(not(all(target_os = "macos", feature = "mac-app-store")))]
             if let Some(port) = control_port {
                 let rx = control_server::start(port, cc.egui_ctx.clone());
                 app = app.with_control(rx);
@@ -342,12 +473,20 @@ fn main() -> eframe::Result {
             if sample {
                 let _ = app.run("file.newSample", serde_json::json!({}));
             }
-            for f in files {
+            #[cfg(all(target_os = "macos", feature = "mac-app-store"))]
+            app.require_async_file_dialogs();
+            #[cfg(not(all(target_os = "macos", feature = "mac-app-store")))]
+            for f in &files {
                 if let Err(e) = app.open_file("file.open", serde_json::json!({"path": f})) {
                     eprintln!("designcraft: {f}: {e}");
                 }
             }
             Ok(Box::new(App {
+                #[cfg(all(target_os = "macos", feature = "mac-app-store"))]
+                startup_files: files,
+                pending_opens,
+                #[cfg(target_os = "macos")]
+                apple_events: apple_events.connect(&cc.egui_ctx),
                 app,
                 #[cfg(target_os = "macos")]
                 menu: None,

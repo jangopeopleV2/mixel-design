@@ -1880,10 +1880,8 @@ pub fn links_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
             crate::rtl::label(ui, egui::RichText::new(crate::i18n::tr(&app.ui.language, "Choose a link.")).color(t.text_dim).size(11.0));
             return;
         };
-        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Relink…"))).clicked()
-            && let Some(path) = app.services.pick_open.as_mut().and_then(|pick| pick("relink"))
-        {
-            let _ = app.run("links.relink", json!({"asset": aid, "path": path}));
+        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Relink…"))).clicked() {
+            let _ = app.ask_open("relink", move |app, path| app.run("links.relink", json!({"asset": aid, "path": path})));
         }
         if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Go To"))).clicked() {
             let _ = app.run("links.goTo", json!({"asset": aid}));
@@ -1903,12 +1901,19 @@ pub fn links_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
                 crate::rtl::label(ui, crate::i18n::tr(&app.ui.language, "Pick a file in the folder holding the moved graphics"));
             })
             .clicked()
-            && let Some(path) = app.services.pick_open.as_mut().and_then(|pick| pick("relink"))
-            && let Some(dir) = std::path::Path::new(&path).parent()
         {
-            let r = app.run("links.relinkFolder", json!({"dir": dir.to_string_lossy()}));
-            if let Ok(v) = r {
-                app.status(format!("Relinked {}", v["relinked"]));
+            let relink = |app: &mut DesignApp, dir: String| {
+                let value = app.run("links.relinkFolder", json!({"dir": dir}))?;
+                app.status(format!("Relinked {}", value["relinked"]));
+                Ok(value)
+            };
+            if app.services.pick_native.is_some() {
+                let _ = app.ask_folder("Choose the folder holding the moved graphics", None, relink);
+            } else {
+                let _ = app.ask_open("relink", move |app, path| {
+                    let dir = std::path::Path::new(&path).parent().ok_or("The file has no containing folder")?;
+                    relink(app, dir.to_string_lossy().into_owned())
+                });
             }
         }
     });

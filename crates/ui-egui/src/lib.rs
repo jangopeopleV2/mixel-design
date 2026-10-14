@@ -6,6 +6,8 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 #![forbid(unsafe_code)]
 
+pub use designcraft_engine::macos_mas;
+
 pub mod about;
 pub mod canvas;
 pub mod chrome;
@@ -40,6 +42,8 @@ pub use control::{ControlRequest, ControlResponse};
 pub type ReadFn = Box<dyn Fn(&str) -> Result<Vec<u8>, String>>;
 pub type WriteFn = Box<dyn FnMut(&str, &[u8]) -> Result<(), String>>;
 pub type PickFn = Box<dyn FnMut(&str) -> Option<String>>;
+pub mod native_pick;
+pub use native_pick::{NativePick, PickAnswer};
 /// Context captured before any host file-picker or read await.
 #[derive(Clone, Debug)]
 pub struct ImportRequest {
@@ -63,6 +67,11 @@ pub struct Services {
     pub pick_open: Option<PickFn>,
     /// Save dialog with a suggested name → path.
     pub pick_save: Option<PickFn>,
+    /// Native sheets are begun by the host on main; their continuations run on a later frame.
+    pub pick_native: Option<native_pick::AsyncPicker>,
+    /// Native host preparation for document opens (sandbox-linked files and document fonts).
+    /// Cancellation/error leaves every existing document unchanged.
+    pub prepare_open: Option<Box<dyn FnMut(&str) -> Result<Option<String>, String>>>,
     pub read: Option<ReadFn>,
     pub write: Option<WriteFn>,
     /// Asynchronous open dialog for a purpose (`open`, `place`); the chosen file arrives later
@@ -468,6 +477,9 @@ pub struct Perf {
 }
 
 pub struct DesignApp {
+    pending_pick: Option<native_pick::Pending>,
+    /// A strict host must never fall back to synchronous AppKit panels.
+    require_native_async: bool,
     pending_pdf: Option<ImportedFile>,
     pub session: Session,
     pub ui: UiState,
@@ -529,6 +541,8 @@ impl DesignApp {
         // The font menus and the first file opened need the installed fonts: catalog them now.
         designcraft_fonts::FontDb::global().scan_in_background();
         DesignApp {
+            pending_pick: None,
+            require_native_async: false,
             pending_pdf: None,
             session,
             ui: UiState::default(),
@@ -570,6 +584,10 @@ impl DesignApp {
         self
     }
 
+    pub fn require_async_file_dialogs(&mut self) {
+        self.require_native_async = true;
+    }
+
     /// The view key of the active document in the current pane.
     fn view_key(&self) -> Option<u64> {
         let uid = self.session.active()?.uid;
@@ -601,7 +619,22 @@ impl DesignApp {
     }
 
     /// THE entry point for every action (menus, shortcuts, palette, panels, control channel).
-    pub fn run(&mut self, id: &str, params: Value) -> Result<Value, String> {
+    pub fn run(&mut self, id: &str, mut params: Value) -> Result<Value, String> {
+        if matches!(id, "file.open" | "file.openIdml")
+            && let Some(path) = params.get("path").and_then(Value::as_str).map(str::to_owned)
+            && let Some(prepare) = self.services.prepare_open.as_mut()
+        {
+            match prepare(&path) {
+                Ok(Some(path)) => {
+                    params["path"] = Value::String(path);
+                }
+                Ok(None) => return Ok(json!({"dialog": "documentFolderAccess"})),
+                Err(error) => {
+                    self.status(error.clone());
+                    return Err(error);
+                }
+            }
+        }
         if let Some(r) = menus::run_ui(self, id, &params) {
             return r;
         }
@@ -638,23 +671,25 @@ impl DesignApp {
     pub fn pick_and_open(&mut self, purpose: &str) -> Result<Value, String> {
         let target = self.session.active().map(|d| d.uid);
         let cmd = if purpose == "place" { "file.place" } else { "file.open" };
-        if let Some(pick) = self.services.pick_open.as_mut() {
-            return match pick(purpose) {
-                // Image Import Options: a multi-page PDF asks which page.
-                Some(path) if purpose == "place" && path.to_ascii_lowercase().ends_with(".pdf") => {
-                    let pages =
-                        self.services.read.as_mut().and_then(|r| r(&path).ok()).and_then(|b| designcraft_render::pdf_page_count(&b)).unwrap_or(1);
-                    if pages > 1 {
-                        self.ui.dialog =
-                            Some(dialogs::Dialog::new("pdfImport", json!({"path": path, "page": "1", "pages": pages, "target": target})));
-                        Ok(Value::Null)
-                    } else {
-                        self.open_file(cmd, json!({"path": path}))
+        if self.services.pick_native.is_some() || self.services.pick_open.is_some() || self.require_native_async {
+            let placing = purpose == "place";
+            return self.ask_open(purpose, move |app, path| {
+                match path {
+                    // Image Import Options: a multi-page PDF asks which page.
+                    path if placing && path.to_ascii_lowercase().ends_with(".pdf") => {
+                        let pages =
+                            app.services.read.as_mut().and_then(|r| r(&path).ok()).and_then(|b| designcraft_render::pdf_page_count(&b)).unwrap_or(1);
+                        if pages > 1 {
+                            app.ui.dialog =
+                                Some(dialogs::Dialog::new("pdfImport", json!({"path": path, "page": "1", "pages": pages, "target": target})));
+                            Ok(Value::Null)
+                        } else {
+                            app.open_file(cmd, json!({"path": path}))
+                        }
                     }
+                    path => app.open_file(cmd, json!({"path": path})),
                 }
-                Some(path) => self.open_file(cmd, json!({"path": path})),
-                None => Ok(Value::Null),
-            };
+            });
         }
         let request = self.import_request(purpose);
         if let Some(open) = self.services.open_async.as_mut() {
@@ -756,6 +791,7 @@ impl DesignApp {
 
     /// Per-frame logic before layout.
     pub fn logic(&mut self, ctx: &egui::Context) {
+        self.drain_native_pick();
         if !self.color_applied {
             self.color_applied = true;
             if let Some(cs) = self.ui.color_settings.clone() {
@@ -812,7 +848,8 @@ impl DesignApp {
         }
         #[cfg(not(target_arch = "wasm32"))]
         for f in ctx.input(|i| i.raw.dropped_files.clone()) {
-            let p = f.path().to_string_lossy().to_string();
+            let Some(path) = crate::macos_mas::picked(f.path(), false) else { continue };
+            let p = path.to_string_lossy().into_owned();
             if !p.is_empty() {
                 let _ = self.open_dropped(&p);
             }
@@ -868,7 +905,7 @@ impl DesignApp {
                     && d.fields.get("quitting").and_then(Value::as_bool) == Some(true)
                     && d.fields.get("uid").and_then(Value::as_u64) == Some(uid)
             });
-            if !asking {
+            if !asking && !self.native_pick_targets(uid) {
                 self.cancel_quit();
             }
             return;
@@ -925,16 +962,16 @@ impl DesignApp {
             return Ok(Value::Null);
         };
         if !discard {
-            let saved = self.run("file.activate", json!({"index": i})).and_then(|_| self.run("app.save", json!({})));
+            self.run("file.activate", json!({"index": i}))?;
+            let saved = self.save_active_then(move |app| app.confirm_quit_document(uid, true));
             if let Err(e) = saved {
                 self.cancel_quit();
                 return Err(e);
             }
-            if self.session.documents().iter().find(|d| d.uid == uid).is_none_or(|d| d.is_dirty()) {
-                // No file chosen (or an asynchronous host save has not completed): stop quitting.
+            if self.pending_pick.is_none() && self.session.documents().iter().find(|d| d.uid == uid).is_some_and(|d| d.is_dirty()) {
                 self.cancel_quit();
-                return Ok(Value::Null);
             }
+            return saved;
         }
         if let Some(q) = self.quitting.as_mut() {
             if let Some(d) = self.session.documents().iter().find(|d| d.uid == uid) {
@@ -1269,6 +1306,31 @@ mod tests {
         app.run("frame.create", json!({"rect": [36, 36, 136, 136]})).unwrap();
         assert!(app.session.documents()[0].is_dirty());
         app
+    }
+
+    #[test]
+    fn sandbox_open_permission_failure_preserves_existing_unsaved_work() {
+        let mut app = app_with_unsaved_document();
+        let uid = app.session.doc().unwrap().uid;
+        let bytes = app.session.execute("file.serialize", &json!({})).unwrap();
+        app.services.prepare_open = Some(Box::new(|_| Err("Folder access was cancelled".into())));
+        assert_eq!(app.run("file.open", json!({"path": "/not-granted/new.designcraft"})).unwrap_err(), "Folder access was cancelled");
+        assert_eq!(app.session.documents().len(), 1);
+        assert_eq!(app.session.doc().unwrap().uid, uid);
+        assert_eq!(app.session.execute("file.serialize", &json!({})).unwrap(), bytes);
+        assert!(app.session.doc().unwrap().is_dirty());
+    }
+
+    #[test]
+    fn sandbox_open_waits_for_the_folder_sheet_before_reading_or_replacing_documents() {
+        let mut app = app_with_unsaved_document();
+        let uid = app.session.doc().unwrap().uid;
+        app.services.prepare_open = Some(Box::new(|_| Ok(None)));
+        // This file does not exist: an eager engine read would return an error.
+        assert_eq!(app.run("file.open", json!({"path": "/not-granted/new.designcraft"})).unwrap(), json!({"dialog": "documentFolderAccess"}));
+        assert_eq!(app.session.documents().len(), 1);
+        assert_eq!(app.session.doc().unwrap().uid, uid);
+        assert!(app.session.doc().unwrap().is_dirty());
     }
 
     /// File ▸ Close (and its shortcut) closed a document with unsaved changes without asking, and

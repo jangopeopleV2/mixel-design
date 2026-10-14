@@ -26,6 +26,9 @@ use crate::{DocState, EngineError, Result, Session};
 
 /// The platform's per-user recovery folder.
 pub fn default_dir() -> Option<PathBuf> {
+    if crate::macos_mas::enabled() {
+        return crate::macos_mas::container_dir("MIXEL Design").map(|p| p.join("Recovery"));
+    }
     let home = std::env::var_os("HOME").map(PathBuf::from);
     if cfg!(target_os = "macos") {
         return home.map(|h| h.join("Library/Application Support/MIXEL Design/Recovery"));

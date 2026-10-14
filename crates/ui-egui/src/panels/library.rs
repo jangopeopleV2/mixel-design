@@ -33,14 +33,10 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
     ui.separator();
     ui.horizontal(|ui| {
         if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "New Library…"))).clicked() {
-            let path = app.services.pick_save.as_mut().and_then(|f| f("Library.dclib"));
-            let _ = app.run("library.new", json!({"path": path}));
+            let _ = app.ask_save("Library.dclib", |app, path| app.run("library.new", json!({"path": path})));
         }
-        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Open…"))).clicked()
-            && let Some(path) = app.services.pick_open.as_mut().and_then(|f| f("library"))
-            && let Err(e) = app.run("library.open", json!({"path": path}))
-        {
-            app.status(format!("Library: {e}"));
+        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Open…"))).clicked() {
+            let _ = app.ask_open("library", |app, path| app.run("library.open", json!({"path": path})));
         }
     });
     let Ok(items) = app.session.execute("library.list", &json!({})) else {
@@ -89,17 +85,11 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
 pub fn book(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     ui.horizontal(|ui| {
-        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "New Book…"))).clicked()
-            && let Some(path) = app.services.pick_save.as_mut().and_then(|f| f("Book.dcbook"))
-            && let Err(e) = app.run("book.new", json!({"path": path}))
-        {
-            app.status(format!("Book: {e}"));
+        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "New Book…"))).clicked() {
+            let _ = app.ask_save("Book.dcbook", |app, path| app.run("book.new", json!({"path": path})));
         }
-        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Open…"))).clicked()
-            && let Some(path) = app.services.pick_open.as_mut().and_then(|f| f("book"))
-            && let Err(e) = app.run("book.open", json!({"path": path}))
-        {
-            app.status(format!("Book: {e}"));
+        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Open…"))).clicked() {
+            let _ = app.ask_open("book", |app, path| app.run("book.open", json!({"path": path})));
         }
     });
     let Ok(info) = app.session.execute("book.list", &json!({})) else {
@@ -141,11 +131,8 @@ pub fn book(app: &mut DesignApp, ui: &mut egui::Ui) {
     }
     ui.separator();
     ui.horizontal_wrapped(|ui| {
-        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Add Document…"))).clicked()
-            && let Some(path) = app.services.pick_open.as_mut().and_then(|f| f("open"))
-            && let Err(e) = app.run("book.add", json!({"path": path}))
-        {
-            app.status(format!("Book: {e}"));
+        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Add Document…"))).clicked() {
+            let _ = app.ask_open("open", |app, path| app.run("book.add", json!({"path": path})));
         }
         if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Update Numbering"))).clicked() {
             let _ = app.run("book.paginate", json!({}));
@@ -153,11 +140,8 @@ pub fn book(app: &mut DesignApp, ui: &mut egui::Ui) {
         if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Synchronize"))).clicked() {
             let _ = app.run("book.syncStyles", json!({}));
         }
-        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Export PDF…"))).clicked()
-            && let Some(path) = app.services.pick_save.as_mut().and_then(|f| f("Book.pdf"))
-            && let Err(e) = app.run("book.exportPdf", json!({"path": path}))
-        {
-            app.status(format!("Book: {e}"));
+        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Export PDF…"))).clicked() {
+            let _ = app.ask_save("Book.pdf", |app, path| app.run("book.exportPdf", json!({"path": path})));
         }
     });
 }
@@ -192,20 +176,24 @@ pub fn scripts(app: &mut DesignApp, ui: &mut egui::Ui) {
             app.ui.scripts.push((format!("Script {}", app.ui.scripts.len() + 1), "# command.id {json} per line\n".into()));
             sel = app.ui.scripts.len() - 1;
         }
-        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Load…"))).clicked()
-            && let Some(path) = app.services.pick_open.as_mut().and_then(|f| f("script"))
-        {
-            #[cfg(target_arch = "wasm32")]
-            let _ = path;
+        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Load…"))).clicked() {
             #[cfg(not(target_arch = "wasm32"))]
-            match std::fs::read_to_string(&path) {
-                Ok(text) => {
-                    let name = std::path::Path::new(&path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Script".into());
-                    app.ui.scripts.push((name, text));
-                    sel = app.ui.scripts.len() - 1;
+            let context = ui.ctx().clone();
+            let _ = app.ask_open("script", move |app, path| {
+                #[cfg(target_arch = "wasm32")]
+                let _ = (app, path);
+                #[cfg(not(target_arch = "wasm32"))]
+                match std::fs::read_to_string(&path) {
+                    Ok(text) => {
+                        let name =
+                            std::path::Path::new(&path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Script".into());
+                        app.ui.scripts.push((name, text));
+                        context.data_mut(|data| data.insert_temp(sel_id.with("loaded"), app.ui.scripts.len() - 1));
+                    }
+                    Err(e) => app.status(format!("Scripts: {e}")),
                 }
-                Err(e) => app.status(format!("Scripts: {e}")),
-            }
+                Ok(serde_json::Value::Null)
+            });
         }
         if ui
             .add_enabled(!app.ui.scripts.is_empty(), egui::Button::new(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Delete"))))
@@ -216,6 +204,9 @@ pub fn scripts(app: &mut DesignApp, ui: &mut egui::Ui) {
             sel = sel.saturating_sub(1);
         }
     });
+    if let Some(loaded) = ui.data_mut(|data| data.remove_temp::<usize>(sel_id.with("loaded"))) {
+        sel = loaded;
+    }
     if let Some((name, text)) = app.ui.scripts.get_mut(sel) {
         ui.add(egui::TextEdit::singleline(name).desired_width(f32::INFINITY));
         ui.add(egui::TextEdit::multiline(text).code_editor().desired_rows(8).desired_width(f32::INFINITY));

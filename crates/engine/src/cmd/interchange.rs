@@ -81,7 +81,17 @@ fn packaged_link_candidates(link: &str, dir: Option<&std::path::Path>) -> Vec<st
     if link.len() > MAX_LINK_PATH_BYTES {
         return Vec::new();
     }
-    let mut candidates = vec![std::path::PathBuf::from(link)];
+    let original = std::path::PathBuf::from(link);
+    let mut candidates = Vec::new();
+    if crate::macos_mas::enabled()
+        && original.is_absolute()
+        && let Ok(path) = crate::macos_mas::resolve(&original)
+    {
+        candidates.push(path);
+    }
+    if !candidates.contains(&original) {
+        candidates.push(original);
+    }
     if let Some(dir) = dir {
         // IDML may retain Windows paths even when the package is opened on another platform.
         let parts: Vec<&str> = link.split(['/', '\\']).filter(|part| !part.is_empty()).collect();
@@ -111,6 +121,12 @@ fn packaged_link_candidates(link: &str, dir: Option<&std::path::Path>) -> Vec<st
 pub(crate) fn resolve_packaged_links(document: &mut Document, dir: Option<&std::path::Path>) {
     let Some(dir) = dir else { return };
     for asset in document.assets.values_mut() {
+        if crate::macos_mas::enabled()
+            && let Some(link) = asset.link.as_deref().filter(|p| std::path::Path::new(p).is_absolute())
+            && let Ok(path) = crate::macos_mas::resolve(link)
+        {
+            std::sync::Arc::make_mut(asset).link = Some(path.to_string_lossy().into_owned());
+        }
         let Some(link) = asset.link.as_deref() else { continue };
         if link.len() > MAX_LINK_PATH_BYTES || std::path::Path::new(link).is_file() {
             continue;

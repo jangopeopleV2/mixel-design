@@ -13,6 +13,19 @@
 # Notarization (env; all three needed, and a real identity):
 #   APPLE_ID, APPLE_PASSWORD (app-specific password), APPLE_TEAM_ID
 set -euo pipefail
+
+# Mac App Store packaging is a separate variant. The default path below stays intact.
+mixel_wants_mas() {
+  while [ "$#" -gt 0 ]; do
+    [ "$1" != "--mas" ] || return 0
+    shift
+  done
+  return 1
+}
+if mixel_wants_mas "$@"; then
+  exec "$(dirname "${BASH_SOURCE[0]}")/mas-package.sh" "$@"
+fi
+unset -f mixel_wants_mas
 # shellcheck source=../env.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../env.sh"
 HERE="$ROOT/packaging/macos"

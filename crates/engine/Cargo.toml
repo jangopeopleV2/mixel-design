@@ -8,6 +8,10 @@ description = "MIXEL Design engine: session, documents, history, selection, comm
 [lints]
 workspace = true
 
+[features]
+default = []
+mac-app-store = ["dep:apple-scoped-bookmarks", "dep:objc2-foundation"]
+
 [dependencies]
 craft-print = { workspace = true }
 designcraft-images = { workspace = true }
@@ -44,3 +48,7 @@ kurbo = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+apple-scoped-bookmarks = { version = "=0.1.0", optional = true }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSPathUtilities", "NSString", "NSBundle", "NSFileManager", "NSURL", "NSError", "NSDictionary"], optional = true }

@@ -125,16 +125,27 @@ fn writable_chapter(s: &Session, path: &str, command: &'static str) -> Result<()
     if Path::new(path).extension().and_then(|ext| ext.to_str()).is_some_and(|ext| ext.eq_ignore_ascii_case("idml")) {
         return Err(bad(command, format!("cannot change imported IDML chapter {path}; convert it to a native MIXEL Design document first")));
     }
-    let target = std::fs::canonicalize(path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
-    if s.docs.iter().any(|doc| doc.path.as_ref().is_some_and(|open| std::fs::canonicalize(open).is_ok_and(|open| open == target))) {
-        return Err(bad(command, format!("chapter {path} is open; close it before updating the book")));
+    let granted = crate::macos_mas::resolve(path).map_err(EngineError::Other)?;
+    let target = std::fs::canonicalize(&granted).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    for doc in &s.docs {
+        if let Some(open) = &doc.path {
+            let open = crate::macos_mas::resolve(open).map_err(EngineError::Other)?;
+            if std::fs::canonicalize(open).is_ok_and(|open| open == target) {
+                return Err(bad(command, format!("chapter {path} is open; close it before updating the book")));
+            }
+        }
     }
     if !std::fs::metadata(&target).is_ok_and(|metadata| metadata.is_file()) {
         return Err(bad(command, format!("chapter {path} is not a regular file")));
     }
-    // Check both the file and its resolved parent without truncating it. Replacement needs a
-    // writable directory even when an in-place write would be permitted.
+    // Check the file without truncating it. Ordinary desktop replacement also checks the
+    // parent; the App Store writer obtains its own OS-granted replacement directory.
     std::fs::OpenOptions::new().write(true).open(&target).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    if crate::macos_mas::enabled() {
+        // Foundation publishes from its own OS-granted replacement directory. A selected
+        // chapter file need not grant creation of an unrelated probe beside it.
+        return Ok(());
+    }
     let parent = target.parent().ok_or_else(|| bad(command, format!("chapter {path} has no parent folder")))?;
     tempfile::Builder::new().prefix(".designcraft-book-check-").tempfile_in(parent).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     Ok(())

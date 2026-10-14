@@ -16,6 +16,8 @@
 //!   the file system rejects that folder flush.
 //!
 //! The web has no file system, so this module is not built for `wasm32`.
+//! The macOS App Store build uses Foundation's OS-granted replacement directory, preserving
+//! streaming and file-only authorization while retaining the ordinary writer on other builds.
 
 use std::fs::File;
 #[cfg(unix)]
@@ -45,6 +47,19 @@ pub(crate) fn write_file(path: &str, bytes: &[u8]) -> crate::Result<()> {
 /// `fill`, the flush or the rename fails, the temporary file is removed, `path` is untouched and
 /// the error is returned.
 pub fn write_atomic_with(path: &Path, fill: impl FnOnce(&mut File) -> io::Result<()>) -> io::Result<()> {
+    #[cfg(all(target_os = "macos", feature = "mac-app-store"))]
+    if crate::macos_mas::enabled() {
+        let granted = crate::macos_mas::resolve(path).map_err(io::Error::other)?;
+        let target = resolve_links(&granted)?;
+        if std::fs::metadata(&target).is_ok() {
+            check_writable(&target)?;
+        }
+        let (_, actual) = crate::macos_atomic::write_with(&target, fill)?;
+        if let Err(error) = crate::macos_mas::after_write(&actual) {
+            log::warn!("File was saved, but future access could not be retained: {error}");
+        }
+        return Ok(());
+    }
     let target = resolve_links(path)?;
     target.file_name().ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, format!("{}: not a file path", path.display())))?;
     let dir = match target.parent() {
@@ -70,6 +85,9 @@ pub fn write_atomic_with(path: &Path, fill: impl FnOnce(&mut File) -> io::Result
     // The new bytes are in place. A failed folder flush can't be undone and must not report the
     // save as failed.
     let _ = sync_dir(&dir);
+    if let Err(error) = crate::macos_mas::after_write(path) {
+        log::warn!("File was saved, but future access could not be retained: {error}");
+    }
     Ok(())
 }
 

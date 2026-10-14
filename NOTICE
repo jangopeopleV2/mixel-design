@@ -67,3 +67,15 @@ No Adobe icons, images or artwork are included.
 MIXEL fork font replacement (2026-10-13): Source Sans 3 and Source Serif 4 binaries listed above are retired and no longer bundled. Their upstream credits and licence texts are retained as provenance. Noto Sans and Noto Serif replace them under SIL OFL 1.1; copyright 2022 The Noto Project Authors, https://github.com/notofonts/latin-greek-cyrillic. See assets/fonts/OFL-Noto.txt and the individual *.attribution sidecars. Inter supplies the interface fonts under its existing OFL notice.
 
 MIXEL automatic font fallback policy (2026-10-13): Source Han family names are retired from automatic CJK fallback chains. Existing Noto and platform font candidates remain, and explicitly selected or supplied document fonts retain their matching behavior. No Source Han font binary is bundled.
+
+App Store file access uses apple-scoped-bookmarks 0.1.0 (MIT OR Apache-2.0),
+by CrispStrobe. Source: https://github.com/CrispStrobe/apple-scoped-bookmarks
+commit 1a07a7dc6569575cc982f062fb7e8672e5361b52. License texts are retained in
+mixel/third-party/apple-scoped-bookmarks-0.1.0/.
+
+Finder file-open events use fmv-macos-events 0.1.0 (MIT OR Apache-2.0).
+Copyright (c) 2026 FastMarkdownViewer contributors.
+Source: https://github.com/Quetzalcohuatl/fastmarkdownviewer
+commit d60be0bd516439f1774fce99240cdadce1e4ac3b (crates/macos-events).
+Exact crate license texts are retained in
+mixel/third-party/fmv-macos-events-0.1.0/.

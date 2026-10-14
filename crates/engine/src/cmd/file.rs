@@ -239,6 +239,7 @@ fn file_save(s: &mut Session, p: &Value) -> Result<Value> {
         .map(str::to_string)
         .or_else(|| st.path.clone())
         .ok_or_else(|| bad("file.save", "missing `path` (document has never been saved)"))?;
+    let path = crate::macos_mas::resolve(&path).map_err(EngineError::Other)?.to_string_lossy().into_owned();
     // Prepare paths for the destination without changing the live document until persistence succeeds.
     let mut saved = (*st.doc).clone();
     super::datamerge::refresh_relative_paths(&mut saved, std::path::Path::new(&path));

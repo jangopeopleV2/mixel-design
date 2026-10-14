@@ -226,13 +226,19 @@ pub fn tags(app: &mut DesignApp, ui: &mut egui::Ui) {
     // DTD: load, validate (problems listed until the next validation), delete.
     let vid = egui::Id::new("dtd_problems");
     let mut problems: Option<Vec<String>> = ui.data(|d| d.get_temp(vid));
+    if ui.data_mut(|data| data.remove_temp::<bool>(vid.with("loaded"))).unwrap_or(false) {
+        problems = None;
+    }
     ui.horizontal(|ui| {
-        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Load DTD…"))).clicked()
-            && let Some(path) = app.services.pick_open.as_mut().and_then(|f| f("dtd"))
-        {
-            match app.run("xml.loadDtd", json!({"path": path})) {
-                Ok(_) => problems = None,
-                Err(e) => app.status(format!("Load DTD: {e}")),
+        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Load DTD…"))).clicked() {
+            let context = ui.ctx().clone();
+            let _ = app.ask_open("dtd", move |app, path| {
+                let result = app.run("xml.loadDtd", json!({"path": path}))?;
+                context.data_mut(|data| data.insert_temp(vid.with("loaded"), true));
+                Ok(result)
+            });
+            if ui.data_mut(|data| data.remove_temp::<bool>(vid.with("loaded"))).unwrap_or(false) {
+                problems = None;
             }
         }
         let has_dtd = info["dtd"].as_bool().unwrap_or(false);
@@ -277,11 +283,8 @@ pub fn tags(app: &mut DesignApp, ui: &mut egui::Ui) {
         if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Export XML…"))).clicked() {
             let _ = app.run("app.exportXml", json!({}));
         }
-        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Import XML…"))).clicked()
-            && let Some(path) = app.services.pick_open.as_mut().and_then(|f| f("xml"))
-            && let Err(e) = app.run("file.importXml", json!({"path": path}))
-        {
-            app.status(format!("Import XML: {e}"));
+        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Import XML…"))).clicked() {
+            let _ = app.ask_open("xml", |app, path| app.run("file.importXml", json!({"path": path})));
         }
     });
 }
@@ -594,11 +597,8 @@ pub fn media(app: &mut DesignApp, ui: &mut egui::Ui) {
     }
     ui.horizontal(|ui| {
         crate::rtl::label(ui, crate::i18n::tr(&app.ui.language, "Poster"));
-        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Choose Image…"))).clicked()
-            && let Some(path) = app.services.pick_open.as_mut().and_then(|f| f("place"))
-            && let Err(e) = app.run("media.options", json!({"poster": {"path": path}}))
-        {
-            app.status(format!("Media: {e}"));
+        if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Choose Image…"))).clicked() {
+            let _ = app.ask_open("place", |app, path| app.run("media.options", json!({"poster": {"path": path}})));
         }
         if !m["poster"].is_null() && ui.small_button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "None"))).clicked() {
             let _ = app.run("media.options", json!({"poster": null}));

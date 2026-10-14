@@ -741,20 +741,18 @@ pub fn run_ui(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value, 
         "app.placeDialog" => app.pick_and_open("place"),
         "app.placeWithOptions" => {
             // Word/RTF Import Options: style mapping and conflicts before the text lands.
-            let Some(path) = app.services.pick_open.as_mut().and_then(|f| f("place")) else { return Some(Ok(Value::Null)) };
+            app.ask_open("place", |app, path| {
             let l = path.to_lowercase();
             if !(l.ends_with(".docx") || l.ends_with(".rtf")) {
-                return Some(app.open_file("file.place", json!({"path": path})));
+                return app.open_file("file.place", json!({"path": path}));
             }
-            let info = match app.run("place.styles", json!({"path": path})) {
-                Ok(v) => v,
-                Err(e) => return Some(Err(e)),
-            };
+            let info = app.run("place.styles", json!({"path": path}))?;
             app.ui.dialog = Some(crate::dialogs::Dialog::new(
                 "importOptions",
                 json!({"path": path, "styles": info["paragraph"], "charStyles": info["character"], "conflicts": info["conflicts"], "styleConflicts": "useExisting", "removeStyles": false, "map": {}}),
             ));
             Ok(Value::Null)
+            })
         }
         "app.save" | "app.saveDialog" if app.services.download.is_some() => download_document(app),
         "app.save" => {
@@ -765,10 +763,7 @@ pub fn run_ui(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value, 
         }
         "app.saveDialog" => {
             let name = app.session.active().map(|d| format!("{}.designcraft", d.doc.title)).unwrap_or_default();
-            if let Some(path) = app.services.pick_save.as_mut().and_then(|f| f(&name)) {
-                return Some(app.run("file.saveAs", json!({"path": path})));
-            }
-            Ok(Value::Null)
+            app.ask_save(&name, |app, path| app.run("file.saveAs", json!({"path": path})))
         }
         "app.quit" => {
             app.request_quit();
@@ -776,10 +771,7 @@ pub fn run_ui(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value, 
         }
         "app.saveCopyDialog" => {
             let name = app.session.active().map(|d| format!("{} copy.designcraft", d.doc.title)).unwrap_or_default();
-            if let Some(path) = app.services.pick_save.as_mut().and_then(|f| f(&name)) {
-                return Some(app.run("file.saveACopy", json!({"path": path})));
-            }
-            Ok(Value::Null)
+            app.ask_save(&name, |app, path| app.run("file.saveACopy", json!({"path": path})))
         }
         "app.exportPng" => export_png(app, p),
         "app.exportIdml" => export_idml(app, p),
@@ -848,19 +840,19 @@ pub fn run_ui(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value, 
         "app.exportText" => export_bytes(app, p, "rtf", "file.exportText"),
         "app.packageDialog" => {
             let name = app.session.active().map(|d| format!("{} Folder", d.doc.title)).unwrap_or_default();
-            match app.services.pick_save.as_mut().and_then(|f| f(&name)) {
-                Some(dir) => {
-                    let r = app.run("file.package", json!({"dir": dir}));
-                    if let Ok(v) = &r {
-                        app.status(format!(
-                            "Packaged {} files into {}",
-                            v["files"].as_array().map_or(0, |f| f.len()),
-                            v["dir"].as_str().unwrap_or("")
-                        ));
-                    }
-                    r
+            let package = |app: &mut DesignApp, dir: String| {
+                let r = app.run("file.package", json!({"dir": dir}));
+                if let Ok(v) = &r {
+                    app.status(format!("Packaged {} files into {}", v["files"].as_array().map_or(0, |f| f.len()), v["dir"].as_str().unwrap_or("")));
                 }
-                None => Ok(Value::Null),
+                r
+            };
+            if app.services.pick_native.is_some() {
+                app.ask_folder("Choose the folder for the collected package", None, move |app, folder| {
+                    package(app, std::path::Path::new(&folder).join(name).to_string_lossy().into_owned())
+                })
+            } else {
+                app.ask_save(&name, package)
             }
         }
         "app.language" => {
@@ -879,19 +871,10 @@ pub fn run_ui(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value, 
             app.ui.flattener = v.to_string();
             Ok(json!(v))
         }
-        "app.graphicCell" => {
-            let Some(pick) = app.services.pick_open.as_mut() else { return Some(Err("needs a file picker".into())) };
-            match pick("place") {
-                Some(path) => app.run("table.placeGraphic", json!({"path": path})),
-                None => Ok(Value::Null),
-            }
-        }
+        "app.graphicCell" => app.ask_open("place", |app, path| app.run("table.placeGraphic", json!({"path": path}))),
         "app.loadSwatches" => {
-            if let Some(pick) = app.services.pick_open.as_mut() {
-                return Some(match pick("swatches") {
-                    Some(path) => app.run("swatch.load", json!({"path": path})),
-                    None => Ok(Value::Null),
-                });
+            if app.services.pick_native.is_some() || app.services.pick_open.is_some() {
+                return Some(app.ask_open("swatches", |app, path| app.run("swatch.load", json!({"path": path}))));
             }
             let request = app.import_request("swatches");
             if let Some(open) = app.services.open_async.as_mut() {
@@ -900,19 +883,17 @@ pub fn run_ui(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value, 
             Ok(Value::Null)
         }
         "app.saveSwatches" => {
-            let path = match p.get("path").and_then(Value::as_str) {
-                Some(s) => Some(s.to_string()),
-                None => app.services.pick_save.as_mut().and_then(|f| f("Swatches.ase")),
+            let write = |app: &mut DesignApp, path: String| {
+                let r = app.run("swatch.save", json!({}))?;
+                let bytes = designcraft_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default());
+                match app.services.write.as_mut() {
+                    Some(w) => w(&path, &bytes).map(|_| json!({"path": path, "bytes": bytes.len()})),
+                    None => Err("no writer".into()),
+                }
             };
-            let Some(path) = path else { return Some(Ok(Value::Null)) };
-            let r = match app.run("swatch.save", json!({})) {
-                Ok(r) => r,
-                Err(e) => return Some(Err(e)),
-            };
-            let bytes = designcraft_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default());
-            match app.services.write.as_mut() {
-                Some(w) => w(&path, &bytes).map(|_| json!({"path": path, "bytes": bytes.len()})),
-                None => Err("no writer".into()),
+            match p.get("path").and_then(Value::as_str) {
+                Some(path) => write(app, path.to_owned()),
+                None => app.ask_save("Swatches.ase", write),
             }
         }
         "app.storyEditor" => {
@@ -1497,6 +1478,18 @@ fn download_document(app: &mut DesignApp) -> Result<Value, String> {
 fn export_png(app: &mut DesignApp, p: &Value) -> Result<Value, String> {
     let st = app.session.active().ok_or("no document")?;
     let page = crate::control::page_index(p, crate::canvas::current_page(app).unwrap_or(0), st.doc.page_count())?;
+    if p.get("path").and_then(Value::as_str).is_none() {
+        let name = format!("{}-p{}.png", st.doc.title, page + 1);
+        let mut params = p.clone();
+        if !params.is_object() {
+            params = json!({});
+        }
+        params["page"] = json!(page);
+        return app.ask_save(&name, move |app, path| {
+            params["path"] = json!(path);
+            export_png(app, &params)
+        });
+    }
     let scale = p.get("scale").and_then(Value::as_f64).unwrap_or(2.0);
     let mut r = designcraft_render::Renderer::new();
     let img = r
@@ -1510,16 +1503,9 @@ fn export_png(app: &mut DesignApp, p: &Value) -> Result<Value, String> {
         )
         .ok_or("no such page")?;
     let png = img.to_png();
-    let path = match p.get("path").and_then(Value::as_str) {
-        Some(s) => Some(s.to_string()),
-        None => {
-            let name = format!("{}-p{}.png", st.doc.title, page + 1);
-            app.services.pick_save.as_mut().and_then(|f| f(&name))
-        }
-    };
-    let Some(path) = path else { return Ok(Value::Null) };
+    let path = p.get("path").and_then(Value::as_str).ok_or("Missing export path")?;
     match app.services.write.as_mut() {
-        Some(w) => w(&path, &png).map(|_| json!({"path": path, "width": img.width, "height": img.height})),
+        Some(w) => w(path, &png).map(|_| json!({"path": path, "width": img.width, "height": img.height})),
         None => Err("no writer".into()),
     }
 }
@@ -1529,13 +1515,16 @@ fn export_png(app: &mut DesignApp, p: &Value) -> Result<Value, String> {
 fn export_idml(app: &mut DesignApp, p: &Value) -> Result<Value, String> {
     let st = app.session.active().ok_or("no document")?;
     let path = match p.get("path").and_then(Value::as_str) {
-        Some(s) => Some(s.to_string()),
+        Some(s) => s.to_owned(),
         None => {
             let name = format!("{}.idml", st.doc.title);
-            app.services.pick_save.as_mut().and_then(|f| f(&name))
+            let mut params = if p.is_object() { p.clone() } else { json!({}) };
+            return app.ask_save(&name, move |app, path| {
+                params["path"] = json!(path);
+                export_idml(app, &params)
+            });
         }
     };
-    let Some(path) = path else { return Ok(Value::Null) };
     let r = app.run("file.exportIdml", json!({}))?;
     let bytes = designcraft_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default());
     match app.services.write.as_mut() {
@@ -1546,16 +1535,19 @@ fn export_idml(app: &mut DesignApp, p: &Value) -> Result<Value, String> {
 
 /// Export EPUB / Text: ask for a path (default extension `ext`), run `cmd` without one and write
 /// what it returns (`base64` or `text`) with the platform writer.
-fn export_bytes(app: &mut DesignApp, p: &Value, ext: &str, cmd: &str) -> Result<Value, String> {
+fn export_bytes(app: &mut DesignApp, p: &Value, ext: &'static str, cmd: &'static str) -> Result<Value, String> {
     let st = app.session.active().ok_or("no document")?;
     let path = match p.get("path").and_then(Value::as_str) {
-        Some(s) => Some(s.to_string()),
+        Some(s) => s.to_owned(),
         None => {
             let name = format!("{}.{ext}", st.doc.title);
-            app.services.pick_save.as_mut().and_then(|f| f(&name))
+            let mut params = if p.is_object() { p.clone() } else { json!({}) };
+            return app.ask_save(&name, move |app, path| {
+                params["path"] = json!(path);
+                export_bytes(app, &params, ext, cmd)
+            });
         }
     };
-    let Some(path) = path else { return Ok(Value::Null) };
     let mut params = json!({});
     if cmd == "file.exportText" {
         let txt = path.to_ascii_lowercase().ends_with(".txt");
@@ -1577,13 +1569,16 @@ fn export_bytes(app: &mut DesignApp, p: &Value, ext: &str, cmd: &str) -> Result<
 pub(crate) fn export_pdf(app: &mut DesignApp, p: &Value) -> Result<Value, String> {
     let st = app.session.active().ok_or("no document")?;
     let path = match p.get("path").and_then(Value::as_str) {
-        Some(s) => Some(s.to_string()),
+        Some(s) => s.to_owned(),
         None => {
             let name = format!("{}.pdf", st.doc.title);
-            app.services.pick_save.as_mut().and_then(|f| f(&name))
+            let mut params = if p.is_object() { p.clone() } else { json!({}) };
+            return app.ask_save(&name, move |app, path| {
+                params["path"] = json!(path);
+                export_pdf(app, &params)
+            });
         }
     };
-    let Some(path) = path else { return Ok(Value::Null) };
     let mut params = if p.is_object() { p.clone() } else { json!({}) };
     if let Some(o) = params.as_object_mut() {
         o.remove("path");

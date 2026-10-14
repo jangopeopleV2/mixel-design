@@ -10,6 +10,10 @@ default-run = "designcraft"
 [lints]
 workspace = true
 
+[features]
+default = []
+mac-app-store = ["designcraft-ui-egui/mac-app-store", "dep:objc2", "dep:objc2-app-kit"]
+
 [dependencies]
 designcraft-engine = { workspace = true }
 designcraft-ui-egui = { workspace = true }
@@ -18,6 +22,8 @@ egui = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
+# Wait for native folder sheets on a worker, never by nesting AppKit runModal.
+pollster = "0.4"
 
 [build-dependencies]
 # Icon + VERSIONINFO for designcraft.exe; build.rs only uses it when the target is Windows.
@@ -34,3 +40,7 @@ winit = { version = "0.30", default-features = false, features = ["x11"] }
 # The same winit as eframe; only the native termination opt-in is used.
 winit = { version = "0.30", default-features = false }
 muda = { version = "0.21", default-features = false }
+# Safe Finder document/quit event bridge, shared with Photo, Print and Effects.
+fmv-macos-events = "=0.1.0"
+objc2 = { version = "0.6", optional = true }
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSWindow"], optional = true }

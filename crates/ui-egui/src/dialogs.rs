@@ -1466,16 +1466,17 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
                     ui.end_row();
                 });
                 check(ui, &mut d, "bpc", crate::i18n::tr(&app.ui.language, "Use Black Point Compensation"));
-                if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Load Profile…"))).clicked()
-                    && let Some(path) = app.services.pick_open.as_mut().and_then(|f| f("icc"))
-                {
-                    match app.session.execute("color.loadProfile", &json!({"path": path})) {
-                        Ok(_) => {
-                            let f = app.session.execute("color.settings", &json!({})).unwrap_or_default();
-                            d.fields.insert("profiles".into(), f["profiles"].clone());
-                        }
-                        Err(e) => app.status(format!("Color Settings: {e}")),
-                    }
+                if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Load Profile…"))).clicked() {
+                    let context = ui.ctx().clone();
+                    let _ = app.ask_open("icc", move |app, path| {
+                        app.run("color.loadProfile", json!({"path": path}))?;
+                        let settings = app.run("color.settings", json!({}))?;
+                        context.data_mut(|data| data.insert_temp(egui::Id::new("loaded_color_profiles"), settings["profiles"].clone()));
+                        Ok(Value::Null)
+                    });
+                }
+                if let Some(profiles) = ui.data_mut(|data| data.remove_temp::<Value>(egui::Id::new("loaded_color_profiles"))) {
+                    d.fields.insert("profiles".into(), profiles);
                 }
             }
             "keyboardShortcuts" => keyboard_shortcuts(app, ui, &mut d),
@@ -1976,14 +1977,10 @@ pub fn confirm(app: &mut DesignApp) -> Result<Value, String> {
                 params["title"] = json!(title);
             }
             let name = if title.is_empty() { "Export.pdf".to_string() } else { format!("{title}.pdf") };
-            match app.services.pick_save.as_mut().and_then(|f| f(&name)) {
-                Some(path) => {
+            app.ask_save(&name, move |app, path| {
                     params["path"] = json!(path);
                     crate::menus::export_pdf(app, &params)
-                }
-                // The user cancelled the save dialog: export nothing.
-                None => Ok(Value::Null),
-            }
+            })
         }
         "preferences" => {
             app.run(
@@ -2085,11 +2082,12 @@ pub fn confirm(app: &mut DesignApp) -> Result<Value, String> {
             let Some(i) = index(app) else { return Ok(Value::Null) };
             if !d.b("discard") {
                 app.run("file.activate", json!({"index": i}))?;
-                app.run("app.save", json!({}))?;
-                // Still unsaved: the save was cancelled (no file chosen). Keep the document open.
-                if app.session.documents().get(i).is_none_or(|doc| doc.is_dirty()) {
-                    return Ok(Value::Null);
-                }
+                return app.save_active_then(move |app| {
+                    match app.session.documents().iter().position(|doc| Some(doc.uid) == uid) {
+                        Some(index) => app.run("file.close", json!({"index": index})),
+                        None => Ok(Value::Null),
+                    }
+                });
             }
             match index(app) {
                 Some(i) => app.run("file.close", json!({"index": i})),

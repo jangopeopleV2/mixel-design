@@ -9,6 +9,10 @@ description = "MIXEL Design egui frontend (InDesign-style UI); swappable — not
 [lints]
 workspace = true
 
+[features]
+default = []
+mac-app-store = ["designcraft-engine/mac-app-store"]
+
 [dependencies]
 craft-ui = { workspace = true }
 designcraft-geom = { workspace = true }

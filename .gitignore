@@ -8,3 +8,6 @@ plan/
 /.claude/
 /target-*/
 /craft-fonts/
+
+# Python packaging helpers
+__pycache__/

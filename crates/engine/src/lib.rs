@@ -7,6 +7,11 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 #![forbid(unsafe_code)]
 
+pub mod macos_mas;
+
+#[cfg(all(target_os = "macos", feature = "mac-app-store"))]
+pub mod macos_atomic;
+
 #[cfg(not(target_arch = "wasm32"))]
 pub mod atomic;
 pub mod cmd;
@@ -394,6 +399,14 @@ impl Session {
     /// Run command `id`. A panic inside it becomes [`EngineError::Internal`] and leaves the
     /// document as it was (see [`guard`]).
     pub fn execute(&mut self, id: &str, params: &Value) -> Result<Value> {
+        let mut resolved;
+        let params = if crate::macos_mas::enabled() {
+            resolved = params.clone();
+            crate::macos_mas::resolve_params(&mut resolved).map_err(EngineError::Other)?;
+            &resolved
+        } else {
+            params
+        };
         self.guarded(id, |s| s.execute_unguarded(id, params))
     }
 
