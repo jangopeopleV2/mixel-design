@@ -2,6 +2,8 @@
 
 **Stage: pre-alpha** · next: alpha, ~0% and ~15–25 h away; beta ~28 points and ~420–750 h beyond that (the core-workflow gate, not the percentage: ready for real work is already ~47%)
 
+> **Phase 1 record status — 2026-10-14:** minor; Mac App Store implementation recorded, earlier local verification recorded before this update; later verification and delivery evidence tracked in suite STATUS.md. Scores, estimates and the earlier assessment dates below are unchanged.
+
 > **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-12 · **Change:** minor (cancelable macOS Dock Quit) · **Target:** Adobe InDesign 2026
 
 DesignCraft aims at full Adobe InDesign parity, and to be better: faster, open (documented JSON
@@ -129,6 +131,7 @@ list) · [roadmap.md](docs/roadmap.md) (milestones, plan) · [parity-checklist.m
 
 Newest first.
 
+- **2026-10-14** · The `mac-app-store` variant is implemented with verified Foundation container paths, app-scoped bookmarks, parented asynchronous file sheets, Foundation atomic replacement, disabled MAS control listeners, and a separate feature-bound signing/package path. Local CI/release, signed production-library save/reopen and workspace/About checks, and signed package verification were recorded before this documentation update; source-bound refresh was pending at this entry; current verification and internal delivery evidence are tracked in suite STATUS.md. These records do not establish distributed desktop or TestFlight launches. Delivery status is recorded in the suite STATUS.md; headline numbers and remaining gaps are unchanged.
 - **2026-10-12** · macOS Dock Quit uses the same unsaved-document prompts as window and menu Quit. Repeated requests keep the current answers; Cancel retains every tab and unsaved recovery checkpoint, and completed Save/Don't Save answers exit through the ordinary event loop. No readiness percentage change.
 - **2026-10-12** · Orderly native exit writes the latest recovery state after finalizing current quit approvals; incomplete or stale plans keep their documents, and Undo to the saved state clears stale recovery. Unavailable or failed recovery is reported. Cancelable macOS Dock Quit remains open (#544). No readiness percentage change.
 - **2026-10-12** · Recovered documents keep a checkpoint until saved, closed or reverted, including a second crash before autosave. Restarted document IDs and explicit recovery folders preserve other snapshots; failed republishing retains the original. No readiness percentage change.
@@ -180,6 +183,7 @@ Newest first.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-14 | minor | Mac App Store sandbox and packaging implementation recorded; earlier local verification distinguished from the source-bound refresh pending at this entry; later verification and delivery evidence tracked in suite STATUS.md; parity scores, estimates and existing gaps unchanged |
 | 2026-10-10 | minor | Full number 42% → 47% (method aligned with the standard: plain weighted sum, no new evidence); readiness table with hours per audience |
 | 2026-10-10 | minor | Headline adds mainstream practitioner (~42%) and essentials user (~54%); method in docs/target-app-parity.md |
 | 2026-10-10 | minor | Stage alpha → pre-alpha under the new core-workflow gate: manual text threading is missing; alpha gate table added to docs/roadmap.md |

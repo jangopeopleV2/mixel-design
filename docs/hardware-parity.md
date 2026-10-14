@@ -1,5 +1,7 @@
 # Hardware and platform parity
 
+> **Phase 1 record status — 2026-10-14:** minor; Mac App Store implementation recorded, earlier local verification recorded before this update; later verification and delivery evidence tracked in suite STATUS.md. Scores, estimates and the earlier assessment dates below are unchanged.
+
 > **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-11 · **Change:** minor (shared print spooler; Windows CI passes) · **Target:** Adobe InDesign 2026 (21.6)
 
 What InDesign does with hardware, per platform, against DesignCraft. Layout is not a
@@ -29,6 +31,7 @@ graphics driver loses the user entirely. Overall numbers: [target-app-parity.md]
 | Platform | InDesign 2026 | DesignCraft | Evidence |
 |---|---|---|---|
 | macOS (Apple silicon, Intel) | ✓ | ✓ primary development platform | Intel GPU start failure (#334); window controls misaligned (#333); font managers (#327) |
+| Mac App Store variant | — | implemented; earlier local verification recorded | Verified Foundation container paths, scoped bookmarks, parented asynchronous sheets, Foundation atomic saves, disabled MAS control listeners and signed package path; local CI/release and signed production-library save/reopen/workspace/About/package checks predate this record update. Source-bound refresh pending at this entry; current evidence is tracked in suite STATUS.md; distributed desktop/TestFlight launches not established. See [MAS contract](../packaging/macos/README-mas.md). |
 | Windows x64 | ✓ | ~ builds and installers ship | copy/paste and context menus (#351, #312), installer confusion (#64), launch failures (#273, #167) |
 | Windows ARM64 | ✓ | ~ build (CI workflow) | not exercised at runtime |
 | Linux (x86_64, aarch64; riscv64 tar.gz) | ✗ | ~ deb, AppImage, Flatpak | clipboard (#164), panels don't scroll (#267), CJK UI font (#332) |
@@ -53,6 +56,7 @@ the developers don't use daily.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-14 | minor | Mac App Store sandbox and packaging implementation recorded; earlier local verification distinguished from the source-bound refresh pending at this entry; later verification and delivery evidence tracked in suite STATUS.md; parity scores, estimates and existing gaps unchanged |
 | 2026-10-10 | major | Created from the code, InDesign 2026's GPU Performance features and the issue tracker |
 
 Windows submission now uses shared craft-print. It selects matching or default driver paper,

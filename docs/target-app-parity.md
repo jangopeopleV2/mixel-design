@@ -1,5 +1,7 @@
 # DesignCraft parity with Adobe InDesign
 
+> **Phase 1 record status — 2026-10-14:** minor; Mac App Store implementation recorded, earlier local verification recorded before this update; later verification and delivery evidence tracked in suite STATUS.md. Scores, estimates and the earlier assessment dates below are unchanged.
+
 > **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-12 · **Change:** minor (cancelable macOS Dock Quit) · **Target:** Adobe InDesign 2026 (21.6.0.57, macOS)
 
 The authoritative assessment of how close DesignCraft is to Adobe InDesign. [ROADMAP.md](../ROADMAP.md)
@@ -65,7 +67,7 @@ they receive, setting type exactly, and basic editing that never fails.
 | Stability | 10% | 45% | 60–100 | Never-crash rules and last-resort guards; startup failures on some GPUs and machines (#334, #273, #220, #192, #167, #166); no CI runs the tests on pull requests | [gaps.md](gaps.md) |
 | Performance | 5% | 65% | 40–80 | 300k characters compose in ~38 ms warm; typing repaints in < 1 ms (damage regions); no incremental composition; nothing benchmarked against InDesign; no large real documents | [gaps.md](gaps.md) |
 | Localization | 3% | 45% | 120–180 | 9 translations beyond English; Japanese 95%, most others 83–85%, pt-BR 61%; Hindi, Indonesian, Korean, Vietnamese none | [localization-parity.md](localization-parity.md) |
-| Platforms | 3% | 55% | 40–80 | macOS is where it's tested; Windows and Linux users hit basic failures; web and FreeBSD builds exist | [hardware-parity.md](hardware-parity.md) |
+| Platforms | 3% | 55% | 40–80 | macOS is where it's tested; Windows and Linux users hit basic failures; web and FreeBSD builds exist; Mac App Store variant implemented with earlier local verification predating this entry; later verification and delivery evidence tracked in suite STATUS.md (see the platform checklist) | [hardware-parity.md](hardware-parity.md) |
 | Hardware | 2% | 45% | 20–40 | Canvas rasterizes on the CPU (vello_cpu, multithreaded); GPU only presents; printing uses shared CUPS/Windows PDF spoolers (no PostScript; physical output needs validation) | [hardware-parity.md](hardware-parity.md) |
 | Ecosystem (scripting, plug-ins) | 2% | 15% | 150–250 | Own command/script/MCP API is strong; no ExtendScript/UXP DOM, so InDesign scripts don't run; no plug-ins | [gaps.md](gaps.md) |
 | AI features | 0% (not weighted) | 15% | 60–120 | Agent control through MCP goes beyond InDesign; no generative features (InDesign 2026: Generative Expand, Text to Image, Auto Style) | [gaps.md](gaps.md) |
@@ -445,6 +447,7 @@ Task notes that headed ROADMAP.md:
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-14 | minor | Mac App Store sandbox and packaging implementation recorded; earlier local verification distinguished from the source-bound refresh pending at this entry; later verification and delivery evidence tracked in suite STATUS.md; parity scores, estimates and existing gaps unchanged |
 | 2026-10-10 | minor | Full number 42% → 47%: method aligned with the standard (plain weighted sum, the ×0.9 discount dropped), no new evidence; readiness table with hours for full, mainstream and essentials; beta distance 33 → 28 points |
 | 2026-10-10 | minor | Added mainstream practitioner (~42%) and essentials user (~54%) numbers with written weights and discounts and a user-evidence count; full number (42%) now written as 47.2% × 0.9, value unchanged |
 | 2026-10-10 | minor | Stage alpha → pre-alpha under the core-workflow gate (manual threading missing); Type & text frames row updated |
