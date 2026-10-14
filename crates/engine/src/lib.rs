@@ -7,6 +7,8 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 #![forbid(unsafe_code)]
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod atomic;
 pub mod cmd;
 pub mod dtd;
 pub mod guard;
@@ -91,6 +93,9 @@ pub struct DocState {
     /// Editing parent spreads (Pages panel double-click on a parent).
     pub editing_parents: bool,
     pub uid: u64,
+    /// Recovery entries this state actually opened or published, for repeated-open and cleanup.
+    /// Bounded, deduplicated checkpoint addresses; never inferred from uid alone.
+    pub(crate) recovery_entries: Vec<(std::path::PathBuf, u64)>,
     /// Unfilled document while data-merge preview is showing a record. Not saved.
     pub preview_stash: Option<Arc<Document>>,
     /// 1-based record currently previewed.
@@ -129,6 +134,7 @@ impl DocState {
             interaction: None,
             editing_parents: false,
             uid: NEXT_UID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+            recovery_entries: Vec::new(),
             preview_stash: None,
             preview_record: None,
             fonts: None,
@@ -374,8 +380,9 @@ impl Session {
             self.stop_data_preview();
         }
         #[cfg(not(target_arch = "wasm32"))]
-        if let (Some(dir), Some(d)) = (&self.recovery_dir, self.docs.get(i)) {
-            recovery::discard(dir, d.uid);
+        {
+            let recovery_dir = self.recovery_dir.clone();
+            recovery::discard_document(self, i, recovery_dir.as_deref());
         }
         if i < self.docs.len() {
             self.docs.remove(i);

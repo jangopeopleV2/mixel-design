@@ -64,11 +64,11 @@ fn svg_options() -> &'static usvg::Options<'static> {
         for f in designcraft_fonts::japanese_document_fonts() {
             db.load_font_data(f.bytes.to_vec());
         }
-        db.set_serif_family("Source Serif 4");
-        db.set_sans_serif_family("Source Sans 3");
+        db.set_serif_family("Noto Serif");
+        db.set_sans_serif_family("Noto Sans");
         db.set_monospace_family("JetBrains Mono");
         let font_resolver = usvg::FontResolver { select_font: select_font(), select_fallback: select_fallback() };
-        usvg::Options { fontdb: Arc::new(db), font_family: "Source Sans 3".into(), font_resolver, ..Default::default() }
+        usvg::Options { fontdb: Arc::new(db), font_family: "Noto Sans".into(), font_resolver, ..Default::default() }
     })
 }
 
@@ -339,7 +339,7 @@ mod tests {
         assert!(set.len() == 2 && set.iter().all(|(f, gid)| f == "DC Test SVG Hangul" && *gid != 0), "{set:?}");
         // Characters the bundled default lacks: a shared face that has them, not the default.
         let set = glyph_families(&text("", "한글"));
-        assert!(set.len() == 2 && set.iter().all(|(f, gid)| f != "Source Sans 3" && *gid != 0), "{set:?}");
+        assert!(set.len() == 2 && set.iter().all(|(f, gid)| f != "Noto Sans" && *gid != 0), "{set:?}");
     }
 
     /// A minimal Photoshop file: 2×1 RGB, no layers, raw merged image.

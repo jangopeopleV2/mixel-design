@@ -1,6 +1,6 @@
 //! Vertical metrics (`vmtx`, `vhea`, `VORG`), the ideographic em box and top-to-bottom shaping.
 //!
-//! The synthetic font (Source Sans 3 with `vhea`/`vmtx`, and `VORG` where asked) runs everywhere;
+//! The synthetic font (Noto Sans with `vhea`/`vmtx`, and `VORG` where asked) runs everywhere;
 //! the checks against Shippori Mincho's own tables run when built with craft-fonts.
 
 use skrifa::raw::TableProvider;
@@ -14,7 +14,7 @@ fn japanese() -> ShapeContext<'static> {
     ShapeContext { language: Some("ja"), ..Default::default() }
 }
 
-/// The synthetic font's characters and the Source Sans 3 glyphs that draw them.
+/// The synthetic font's characters and the Noto Sans glyphs that draw them.
 const GLYPHS: &[(char, char)] = &[('一', 'X'), ('ヸ', 'O'), ('、', ',')];
 
 /// A font with vertical metrics: every glyph one em down the line with a top side bearing of 120,
@@ -58,7 +58,7 @@ fn reads_vmtx() {
         let top = f64::from(gm.bounds(GlyphId::new(gid)).unwrap().y_max);
         assert_eq!(face.v_origin(gid), top + tsb, "{c}");
     }
-    // The em box doesn't come from vmtx: Source Sans 3's BASE table.
+    // The em box doesn't come from vmtx: the synthetic BASE table.
     assert_eq!(face.em_box(), (830.0, -170.0));
     // Glyphs past the long metrics advance as the last of them.
     let face = face_of(with_table_u16(vertical_font(), b"vhea", 34, 1).unwrap());
@@ -104,7 +104,7 @@ fn shippori_reads_vmtx() {
 
 #[test]
 fn fonts_without_vmtx_use_the_em_box() {
-    // Source Sans 3 has no vmtx; its BASE table gives the ideographic em box bottom (-170).
+    // The synthetic font has no vmtx; its BASE table gives the ideographic em box bottom (-170).
     let face = face_of(font_with("No Vmtx", &['一']).unwrap());
     let gid = face.glyph_for('一');
     assert_ne!(gid, 0);
@@ -131,7 +131,7 @@ fn broken_vertical_tables_do_not_panic() {
     let mut cases = vec![
         ("synthetic: VORG cut short".to_string(), with_table_len(vorg.clone(), b"VORG", 6).unwrap()),
         ("synthetic: more origins than VORG holds".to_string(), with_table_u16(vorg, b"VORG", 6, u16::MAX).unwrap()),
-        ("BASE cut short".to_string(), with_table_len(crate::bundled()[0].to_vec(), b"BASE", 6).unwrap()),
+        ("BASE cut short".to_string(), with_table_len(font_with("Truncated Base", &['一']).unwrap(), b"BASE", 6).unwrap()),
     ];
     for (name, font) in fonts {
         cases.extend([

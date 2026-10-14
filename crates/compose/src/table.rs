@@ -653,7 +653,7 @@ mod height_tests {
         let mut cell = Cell::with_text(text, ParaFormat::default());
         cell.insets = [8.5, 4.0, bottom, 4.0];
         cell.text.format_chars(0..cell.text.len(), |f| {
-            f.over.font_family = Some("Source Sans 3".into());
+            f.over.font_family = Some("Noto Sans".into());
             f.over.font_style = Some("Regular".into());
             f.over.size = Some(11.0);
         });

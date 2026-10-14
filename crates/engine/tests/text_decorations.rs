@@ -16,7 +16,7 @@ fn document(decoration: u8, hide_first: bool, hide_second: bool) -> Document {
             d.default_layer(),
             "HI",
             ParaFormat {
-                chars: CharAttrs { font_family: Some("Source Sans 3".into()), size: Some(72.0), fill: Some("[Black]".into()), ..Default::default() },
+                chars: CharAttrs { font_family: Some("Noto Sans".into()), size: Some(72.0), fill: Some("[Black]".into()), ..Default::default() },
                 ..Default::default()
             },
         )

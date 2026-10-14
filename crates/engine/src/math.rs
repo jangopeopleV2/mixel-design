@@ -438,7 +438,7 @@ impl Fonts {
 }
 
 const FAMILY: &str = designcraft_fonts::DEFAULT_FAMILY;
-const FALLBACK: &str = "Source Sans 3";
+const FALLBACK: &str = "Noto Sans";
 
 fn text_box(f: &Fonts, s: &str, size: f64, italic: bool) -> MBox {
     let w = f.width(s, size, italic);

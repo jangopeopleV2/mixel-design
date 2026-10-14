@@ -167,13 +167,15 @@ fn underline_options_render_and_round_trip() {
     let st = cs.styles.iter().find(|st| st.underline).unwrap();
     assert_eq!((st.underline_rule.weight, st.underline_rule.offset), (3.0, 4.0));
     assert_eq!(st.underline_rule.color, "C=100 M=0 Y=0 K=0");
-    // Drawn in cyan, 4–7 pt under the baseline.
+    // The 3 pt bar is centered 4 pt below the baseline; sample its interior.
     let l = &cs.frames[0].lines[0];
     let mut rr = designcraft_render::Renderer::new();
     rr.threads = 0;
     let img = rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap();
-    let x = l.glyphs[2].x as u32;
-    let p = img.pixel(x, (l.baseline + 5.5) as u32);
+    let g = &l.glyphs[2];
+    let x = (g.x + g.adv / 2.0) as u32;
+    let y = (l.baseline + st.underline_rule.offset) as u32;
+    let p = img.pixel(x, y);
     assert!(p[0] < 80 && p[2] > 150, "cyan underline: {p:?}");
     let back = designcraft_idml::import_idml(&designcraft_idml::export_idml(&d)).unwrap();
     let story = back.stories.values().find(|x| x.text.starts_with("Underlined")).unwrap();

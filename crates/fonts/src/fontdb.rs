@@ -15,7 +15,7 @@ use skrifa::{GlyphId, MetadataProvider};
 use crate::group::{FamilyInfo, FontGroup};
 
 /// The family used when a requested family is unknown (the UI sans).
-pub const FALLBACK_FAMILY: &str = "Source Sans 3";
+pub const FALLBACK_FAMILY: &str = "Noto Sans";
 
 /// The bundled fonts (OFL), as font file bytes. Japanese fonts are not bundled: they come from
 /// the optional craft-fonts build input ([`crate::japanese_document_fonts`]).
@@ -24,15 +24,15 @@ pub fn bundled() -> &'static [&'static [u8]] {
 }
 
 static BUNDLED: &[&[u8]] = &[
-    include_bytes!("../../../assets/fonts/SourceSans3-Regular.ttf"),
-    include_bytes!("../../../assets/fonts/SourceSans3-Semibold.ttf"),
-    include_bytes!("../../../assets/fonts/SourceSans3-Bold.ttf"),
-    include_bytes!("../../../assets/fonts/SourceSans3-It.ttf"),
-    include_bytes!("../../../assets/fonts/SourceSerif4-Regular.ttf"),
-    include_bytes!("../../../assets/fonts/SourceSerif4-It.ttf"),
-    include_bytes!("../../../assets/fonts/SourceSerif4-Semibold.ttf"),
-    include_bytes!("../../../assets/fonts/SourceSerif4-Bold.ttf"),
-    include_bytes!("../../../assets/fonts/SourceSerif4-BoldIt.ttf"),
+    include_bytes!("../../../assets/fonts/NotoSans-Regular.ttf"),
+    include_bytes!("../../../assets/fonts/NotoSans-SemiBold.ttf"),
+    include_bytes!("../../../assets/fonts/NotoSans-Bold.ttf"),
+    include_bytes!("../../../assets/fonts/NotoSans-Italic.ttf"),
+    include_bytes!("../../../assets/fonts/NotoSerif-Regular.ttf"),
+    include_bytes!("../../../assets/fonts/NotoSerif-Italic.ttf"),
+    include_bytes!("../../../assets/fonts/NotoSerif-SemiBold.ttf"),
+    include_bytes!("../../../assets/fonts/NotoSerif-Bold.ttf"),
+    include_bytes!("../../../assets/fonts/NotoSerif-BoldItalic.ttf"),
     include_bytes!("../../../assets/fonts/Inter-Regular.ttf"),
     include_bytes!("../../../assets/fonts/Inter-Medium.ttf"),
     include_bytes!("../../../assets/fonts/Inter-SemiBold.ttf"),
@@ -89,7 +89,7 @@ pub struct DocumentFonts {
 /// One loaded font face.
 pub struct FontFace {
     id: u32,
-    /// Typographic family name (e.g. "Source Sans 3").
+    /// Typographic family name (e.g. "Noto Sans").
     pub family: String,
     /// Typographic style name (e.g. "Semibold", "Italic").
     pub style: String,
@@ -394,46 +394,15 @@ const JAPANESE_FALLBACKS: &[&str] = &[
     "MS Mincho",
     "Yu Gothic",
     "Noto Serif CJK JP",
-    "Source Han Serif JP",
     "Noto Serif JP",
     "Noto Sans CJK JP",
-    "Source Han Sans JP",
 ];
-const SIMPLIFIED_CHINESE_FALLBACKS: &[&str] = &[
-    "Songti SC",
-    "STSong",
-    "PingFang SC",
-    "SimSun",
-    "Microsoft YaHei",
-    "Noto Serif CJK SC",
-    "Source Han Serif SC",
-    "Noto Serif SC",
-    "Noto Sans CJK SC",
-    "Source Han Sans SC",
-];
-const TRADITIONAL_CHINESE_FALLBACKS: &[&str] = &[
-    "Songti TC",
-    "PingFang TC",
-    "PMingLiU",
-    "MingLiU",
-    "Microsoft JhengHei",
-    "Noto Serif CJK TC",
-    "Source Han Serif TC",
-    "Noto Serif TC",
-    "Noto Sans CJK TC",
-    "Source Han Sans TC",
-];
-const KOREAN_FALLBACKS: &[&str] = &[
-    "AppleMyungjo",
-    "Apple SD Gothic Neo",
-    "Batang",
-    "Malgun Gothic",
-    "Noto Serif CJK KR",
-    "Source Han Serif K",
-    "Noto Serif KR",
-    "Noto Sans CJK KR",
-    "Source Han Sans K",
-];
+const SIMPLIFIED_CHINESE_FALLBACKS: &[&str] =
+    &["Songti SC", "STSong", "PingFang SC", "SimSun", "Microsoft YaHei", "Noto Serif CJK SC", "Noto Serif SC", "Noto Sans CJK SC"];
+const TRADITIONAL_CHINESE_FALLBACKS: &[&str] =
+    &["Songti TC", "PingFang TC", "PMingLiU", "MingLiU", "Microsoft JhengHei", "Noto Serif CJK TC", "Noto Serif TC", "Noto Sans CJK TC"];
+const KOREAN_FALLBACKS: &[&str] =
+    &["AppleMyungjo", "Apple SD Gothic Neo", "Batang", "Malgun Gothic", "Noto Serif CJK KR", "Noto Serif KR", "Noto Sans CJK KR"];
 
 /// The Japanese fallback chain: the craft-fonts Japanese faces' families in document order
 /// (Mincho first; none without craft-fonts), then [`JAPANESE_FALLBACKS`].
@@ -654,7 +623,7 @@ fn enumerate_faces(data: &[u8]) -> Vec<Found> {
     out
 }
 
-/// The compiled-in Source Sans 3 Regular, for a database that somehow has no faces at all.
+/// The compiled-in Noto Sans Regular, for a database that somehow has no faces at all.
 pub(crate) fn last_resort_face() -> Arc<FontFace> {
     static FACE: std::sync::OnceLock<Arc<FontFace>> = std::sync::OnceLock::new();
     FACE.get_or_init(|| {
@@ -662,7 +631,7 @@ pub(crate) fn last_resort_face() -> Arc<FontFace> {
         // `last_resort_face_parses` test proves it on every run.
         #[allow(clippy::expect_used)]
         let face = make_face(FontBytes::Static(BUNDLED[0]), FontSource::Bundled, 0, FALLBACK_FAMILY.into(), "Regular".into(), Vec::new())
-            .expect("the compiled-in Source Sans 3 Regular parses");
+            .expect("the compiled-in Noto Sans Regular parses");
         Arc::new(face)
     })
     .clone()
@@ -1254,7 +1223,7 @@ impl ScopedFonts<'_> {
     }
 
     /// Resolve a family + style to a face, falling back to the closest style of the family, then to
-    /// Source Sans 3 Regular. Installed system fonts are found by name whatever ran before. A
+    /// Noto Sans Regular. Installed system fonts are found by name whatever ran before. A
     /// family with a format suffix (`Minion Pro (OTF)`) that isn't found is looked up without it.
     pub fn face(&self, family: &str, style: &str) -> Arc<FontFace> {
         if let Some(f) = self.find_or_load(family, style).or_else(|| without_format_suffix(family).and_then(|base| self.find_or_load(base, style))) {

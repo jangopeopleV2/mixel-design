@@ -57,8 +57,8 @@ pub fn japanese_ui_fonts(bold: bool) -> Vec<&'static CraftFont> {
     v
 }
 
-/// InDesign's default text font is a serif; ours is Source Serif 4.
-pub const DEFAULT_FAMILY: &str = "Source Serif 4";
+/// InDesign's default text font is a serif; ours is Noto Serif.
+pub const DEFAULT_FAMILY: &str = "Noto Serif";
 
 /// One shaped glyph, in font units (y up).
 ///
@@ -340,9 +340,9 @@ mod tests {
         let db = FontDb::global();
         let fams = db.families();
         assert!(fams.iter().any(|f| f == DEFAULT_FAMILY), "{fams:?}");
-        assert!(fams.iter().any(|f| f == "Source Sans 3"));
+        assert!(fams.iter().any(|f| f == "Noto Sans"));
         let styles = db.styles(DEFAULT_FAMILY);
-        for s in ["Regular", "Italic", "Bold", "Semibold"] {
+        for s in ["Regular", "Italic", "Bold", "SemiBold"] {
             assert!(styles.iter().any(|x| x == s), "{s} in {styles:?}");
         }
     }
@@ -367,13 +367,13 @@ mod tests {
 
     #[test]
     fn language_picks_localized_forms() {
-        // Source Serif 4's `locl` has a Turkish `i`.
+        // Noto Serif's `locl` maps cedilla to comma-below for Romanian.
         let face = FontDb::global().face(DEFAULT_FAMILY, "Regular");
-        let gid = |language| shape_with_context(&face, "i", &[], |c| c, ShapeContext { language, ..Default::default() })[0].gid;
-        assert_eq!(gid(None), face.glyph_for('i'));
-        assert_eq!(gid(Some("en-US")), face.glyph_for('i'));
-        assert_ne!(gid(Some("tr")), face.glyph_for('i'));
-        assert_eq!(gid(Some("not a tag")), face.glyph_for('i'));
+        let gid = |language| shape_with_context(&face, "ş", &[], |c| c, ShapeContext { language, ..Default::default() })[0].gid;
+        assert_eq!(gid(None), face.glyph_for('ş'));
+        assert_eq!(gid(Some("en-US")), face.glyph_for('ş'));
+        assert_ne!(gid(Some("ro")), face.glyph_for('ş'));
+        assert_eq!(gid(Some("not a tag")), face.glyph_for('ş'));
     }
 
     #[test]

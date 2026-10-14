@@ -55,10 +55,12 @@ fn main() {
         }
         if let Some(p) = l.get("shot").and_then(|v| v.as_str()) {
             step_n(&mut harness, 3);
+            let text = visible_text(&harness.output().shapes, harness.ctx.content_rect());
             match harness.render() {
                 Ok(img) => {
                     img.save(p).expect("save png");
                     println!("{p}");
+                    println!("{}", serde_json::json!({"snapshot": p, "width": img.width(), "height": img.height(), "visibleText": text}));
                 }
                 Err(e) => eprintln!("render failed: {e}"),
             }
@@ -68,17 +70,46 @@ fn main() {
             let (req, reply) = ControlRequest::new(m, l.get("params").cloned().unwrap_or_default());
             tx.send(req).expect("send");
             // Pointer/keyboard input is injected one event per frame.
+            let mut response = None;
             for _ in 0..40 {
                 step(&mut harness);
                 if let Ok(r) = reply.try_recv() {
-                    let s = r.to_string();
-                    println!("{m}: {}", &s[..s.len().min(300)]);
+                    response = Some(r);
                     break;
                 }
             }
+            let Some(response) = response else {
+                eprintln!("{m}: no control reply after 40 frames");
+                std::process::exit(1);
+            };
+            println!("{m}: {response}");
             step_n(&mut harness, 2);
         }
     }
+}
+
+/// Complete text from the snapshot's painted frame, fully inside its clip and viewport.
+fn visible_text(shapes: &[egui::epaint::ClippedShape], viewport: egui::Rect) -> Vec<String> {
+    fn collect(shape: &egui::epaint::Shape, clip: egui::Rect, viewport: egui::Rect, text: &mut Vec<String>) {
+        match shape {
+            egui::epaint::Shape::Vec(children) => {
+                for child in children {
+                    collect(child, clip, viewport, text);
+                }
+            }
+            egui::epaint::Shape::Text(t)
+                if !t.galley.elided && clip.contains_rect(t.visual_bounding_rect()) && viewport.contains_rect(t.visual_bounding_rect()) =>
+            {
+                text.push(t.galley.job.text.clone());
+            }
+            _ => {}
+        }
+    }
+    let mut text = Vec::new();
+    for clipped in shapes {
+        collect(&clipped.shape, clipped.clip_rect, viewport, &mut text);
+    }
+    text
 }
 
 /// One frame, with the app's synthetic input (`ui.click`, `ui.drag`, `ui.key`) injected like the

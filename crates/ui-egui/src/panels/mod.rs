@@ -251,8 +251,9 @@ struct FontMenuState {
 /// The Font menu, inside any font field's popup or combo box: a search field (it has the keyboard
 /// while the menu is open, and starts empty each time it opens), favourites (★, Show Favorites
 /// Only), and each family's name with a sample in that family, the script groups apart. ↑/↓ move
-/// through the matches and Return picks one. Returns the family picked and closes the menu; the
-/// search, Favorites and the stars keep it open (the popup closes on a click outside only).
+/// through the matches, Return picks one and Escape closes the menu; none of them reach a dialog
+/// under the menu. Returns the family picked and closes the menu; the search, Favorites and the
+/// stars keep it open (the popup closes on a click outside only).
 pub fn font_menu_body(app: &mut DesignApp, ui: &mut egui::Ui, menu: &[designcraft_fonts::FamilyInfo], current: &str, width: f32) -> Option<String> {
     let (fonts, scope) = (fonts(app), font_scope(app));
     let english = app.session.prefs.show_font_names_in_english;
@@ -291,9 +292,15 @@ pub fn font_menu_body(app: &mut DesignApp, ui: &mut egui::Ui, menu: &[designcraf
     let q = st.query.to_lowercase();
     let shown: Vec<&designcraft_fonts::FamilyInfo> = menu.iter().filter(|f| f.matches(&q) && (!st.only_favs || favs.contains(&f.family))).collect();
     if search.changed() {
-        st.highlight = if q.is_empty() { None } else { Some(0) };
+        // The first arrow press selects the first match, not the second one.
+        st.highlight = None;
     }
-    let (down, up, enter) = ui.input(|i| (i.key_pressed(egui::Key::ArrowDown), i.key_pressed(egui::Key::ArrowUp), i.key_pressed(egui::Key::Enter)));
+    // The menu owns these keys while it is open: a dialog under it must not take Return as OK or
+    // Escape as Cancel.
+    let (down, up, enter, escape) = ui.input_mut(|i| {
+        let mut key = |k| i.consume_key(egui::Modifiers::NONE, k);
+        (key(egui::Key::ArrowDown), key(egui::Key::ArrowUp), key(egui::Key::Enter), key(egui::Key::Escape))
+    });
     let last = shown.len().checked_sub(1);
     st.highlight = match (st.highlight, last) {
         (_, None) => None,
@@ -302,7 +309,9 @@ pub fn font_menu_body(app: &mut DesignApp, ui: &mut egui::Ui, menu: &[designcraf
         (Some(h), Some(l)) if up => Some(h.saturating_sub(1).min(l)),
         (h, Some(l)) => h.map(|h| h.min(l)),
     };
-    if enter && let Some(f) = st.highlight.and_then(|h| shown.get(h)) {
+    // A typed search also accepts its first match directly with Return.
+    let choice = st.highlight.or((!q.is_empty()).then_some(0));
+    if enter && let Some(f) = choice.and_then(|h| shown.get(h)) {
         pick = Some(f.family.clone());
     }
     let ppp = ui.ctx().pixels_per_point();
@@ -317,7 +326,7 @@ pub fn font_menu_body(app: &mut DesignApp, ui: &mut egui::Ui, menu: &[designcraf
             let f = &info.family;
             let label = info.label(english);
             let (row, mut resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), 24.0), egui::Sense::click());
-            let highlighted = st.highlight == Some(k);
+            let highlighted = choice == Some(k);
             if highlighted && (down || up) {
                 ui.scroll_to_rect(row, None);
             }
@@ -374,7 +383,7 @@ pub fn font_menu_body(app: &mut DesignApp, ui: &mut egui::Ui, menu: &[designcraf
     if favs_changed {
         let _ = app.run("prefs.set", json!({ "favoriteFonts": favs }));
     }
-    if pick.is_some() {
+    if pick.is_some() || escape {
         ui.close();
     }
     pick
@@ -404,6 +413,12 @@ pub fn font_combo(
 /// [`font_menu_body`] in a popup under `field` (a font field the caller draws). Returns the family
 /// picked.
 pub fn font_popup(app: &mut DesignApp, field: &egui::Response, menu: &[designcraft_fonts::FamilyInfo], current: &str) -> Option<String> {
+    // Screen readers (and tests) see the field as the combo box it looks like.
+    field.widget_info(|| {
+        let mut info = egui::WidgetInfo::new(egui::WidgetType::ComboBox);
+        info.current_text_value = Some(if current.is_empty() { "—".to_string() } else { font_label(app, menu, current) });
+        info
+    });
     egui::Popup::menu(field)
         .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
         .show(|ui| font_menu_body(app, ui, menu, current, field.rect.width()))
@@ -506,9 +521,22 @@ mod font_menu_ui_tests {
     /// The Type tool's selection over a new text frame's text, with the Control bar on. Returns the
     /// story.
     fn typing() -> (Harness<'static, Window>, u64) {
+        typing_in("Advanced")
+    }
+
+    /// [`typing`] in the workspace `name`.
+    fn typing_in(name: &str) -> (Harness<'static, Window>, u64) {
+        typing_on(name, vec2(1440.0, 900.0), false)
+    }
+
+    /// [`typing_in`] a window of `size`, with the macOS window chrome (the native menu bar and the
+    /// title bar inside the window) when `mac`.
+    fn typing_on(name: &str, size: egui::Vec2, mac: bool) -> (Harness<'static, Window>, u64) {
         let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
-        app.ui.control_bar = true;
-        let mut h = test_window::open(app, vec2(1440.0, 900.0));
+        app.run("window.workspace", json!({ "name": name })).unwrap();
+        app.native_menu = mac;
+        app.integrated_titlebar = mac;
+        let mut h = test_window::open(app, size);
         let app = &mut h.state_mut().app;
         let r = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "Hello", "caret": true})).unwrap();
         app.run("tool.select", json!({"tool": "type"})).unwrap();
@@ -523,7 +551,7 @@ mod font_menu_ui_tests {
 
     /// The Control bar's font field, showing `family`.
     fn field(h: &Harness<'static, Window>, family: &str) -> egui::Rect {
-        h.get_by(|n| n.role() == egui::accesskit::Role::ComboBox && n.value().as_deref() == Some(family)).rect()
+        fields(h, family)[0]
     }
 
     /// The text in the focused search field.
@@ -536,32 +564,53 @@ mod font_menu_ui_tests {
     }
 
     #[test]
+    fn return_accepts_the_first_font_search_result_without_arrow_navigation() {
+        let (mut h, story) = typing();
+        let before = story_text(&mut h, story);
+        let at = field(&h, designcraft_fonts::DEFAULT_FAMILY);
+        click_at(&mut h, at.center());
+        assert!(h.ctx.text_edit_focused(), "the search field takes the keyboard");
+        h.event(egui::Event::Text("noto sans".into()));
+        h.run_steps(4);
+        assert_eq!(search(&h), "noto sans");
+        assert!(h.query_by_label("Noto Sans").is_some(), "the exact family is listed");
+        assert_eq!(story_text(&mut h, story), before, "the typing went to the search, not the story");
+        // Return accepts the first match without an intervening arrow key.
+        h.key_press(egui::Key::Enter);
+        h.run_steps(4);
+        assert_eq!(family(&mut h), "Noto Sans");
+        assert_eq!(story_text(&mut h, story), before, "Return leaves the story text unchanged");
+        assert!(!h.ctx.text_edit_focused(), "accepting a family closes the menu");
+        assert!(h.state().app.session.active().unwrap().selection.text.is_some(), "the text stays selected");
+    }
+
+    #[test]
     fn typing_in_the_font_menu_searches_and_never_reaches_the_story() {
         let (mut h, story) = typing();
         let before = story_text(&mut h, story);
         let at = field(&h, designcraft_fonts::DEFAULT_FAMILY);
         click_at(&mut h, at.center());
         assert!(h.ctx.text_edit_focused(), "the search field takes the keyboard when the menu opens");
-        h.event(egui::Event::Text("source sans".into()));
+        h.event(egui::Event::Text("noto sans".into()));
         h.run_steps(4);
-        assert_eq!(search(&h), "source sans");
+        assert_eq!(search(&h), "noto sans");
         assert_eq!(story_text(&mut h, story), before, "the typing went to the search, not the story");
-        assert!(h.query_by_label("Source Sans 3").is_some(), "a match is listed");
+        assert!(h.query_by_label("Noto Sans").is_some(), "a match is listed");
         assert!(h.query_by_label(designcraft_fonts::DEFAULT_FAMILY).is_none(), "families that don't match aren't");
         // ↓ and Return pick the first match and close the menu.
         h.key_press(egui::Key::ArrowDown);
         h.run_steps(2);
         h.key_press(egui::Key::Enter);
         h.run_steps(4);
-        assert_eq!(family(&mut h), "Source Sans 3");
+        assert_eq!(family(&mut h), "Noto Sans");
         assert_eq!(story_text(&mut h, story), before);
         assert!(!h.ctx.text_edit_focused(), "the menu closed");
         // Reopened, the search starts empty.
-        let at = field(&h, "Source Sans 3");
+        let at = field(&h, "Noto Sans");
         click_at(&mut h, at.center());
         assert_eq!(search(&h), "", "the search starts empty");
         // A click on a family picks it.
-        h.event(egui::Event::Text("serif 4".into()));
+        h.event(egui::Event::Text("serif".into()));
         h.run_steps(4);
         let row = h.get_by_label(designcraft_fonts::DEFAULT_FAMILY).rect();
         click_at(&mut h, row.center());
@@ -570,16 +619,106 @@ mod font_menu_ui_tests {
         let at = field(&h, designcraft_fonts::DEFAULT_FAMILY);
         click_at(&mut h, at.center());
         // A star marks a favourite and keeps the menu open.
-        h.event(egui::Event::Text("serif 4".into()));
+        h.event(egui::Event::Text("serif".into()));
         h.run_steps(4);
         let row = h.get_by_label(designcraft_fonts::DEFAULT_FAMILY).rect();
         click_at(&mut h, row.min + vec2(10.0, 12.0));
         assert!(h.state().app.session.prefs.favorite_fonts.iter().any(|f| f == designcraft_fonts::DEFAULT_FAMILY));
-        assert_eq!(search(&h), "serif 4", "the menu stays open");
+        assert_eq!(search(&h), "serif", "the menu stays open");
         h.key_press(egui::Key::Escape);
         h.run_steps(4);
         assert!(!h.ctx.text_edit_focused(), "the menu closed");
         assert_eq!(story_text(&mut h, story), before);
         assert!(h.state().app.session.active().unwrap().selection.text.is_some(), "the text is still selected");
+    }
+
+    /// The font fields showing `family`, left to right and top to bottom.
+    fn fields(h: &Harness<'static, Window>, family: &str) -> Vec<egui::Rect> {
+        let mut r: Vec<egui::Rect> =
+            h.query_all_by(|n| n.role() == egui::accesskit::Role::ComboBox && n.value().as_deref() == Some(family)).map(|n| n.rect()).collect();
+        r.sort_by(|a, b| a.min.x.total_cmp(&b.min.x).then(a.min.y.total_cmp(&b.min.y)));
+        r
+    }
+
+    /// Opens the font menu of the field at `at`, clicks its search field, types, checks the menu
+    /// stays open and lists only the matches, then picks the first with ↓ and Return.
+    fn search_in_menu(h: &mut Harness<'static, Window>, at: egui::Rect, what: &str) {
+        click_at(h, at.center());
+        let field = h.query_by(|n| n.role() == egui::accesskit::Role::TextInput && n.is_focused()).map(|n| n.rect());
+        let field = field.unwrap_or_else(|| panic!("{what}: the menu opens with the search field focused"));
+        click_at(h, field.center());
+        assert!(h.ctx.text_edit_focused(), "{what}: a click on the search field keeps the menu open");
+        h.event(egui::Event::Text("NOTO SA".into()));
+        h.run_steps(4);
+        assert_eq!(search(h), "NOTO SA", "{what}: the typing went to the search");
+        assert!(h.query_by_label("Noto Sans").is_some(), "{what}: a match is listed");
+        assert!(h.query_by_label(designcraft_fonts::DEFAULT_FAMILY).is_none(), "{what}: families that don't match aren't");
+        h.key_press(egui::Key::ArrowDown);
+        h.run_steps(2);
+        h.key_press(egui::Key::Enter);
+        h.run_steps(4);
+        assert!(!h.ctx.text_edit_focused(), "{what}: the menu closed");
+    }
+
+    /// Every font field over selected text (Control bar, Contextual Task Bar, Properties ›
+    /// Character, Character panel) searches, in the workspaces that show them and in a small
+    /// window with the macOS window chrome.
+    #[test]
+    fn every_font_field_searches_in_every_workspace() {
+        for (name, size, mac, panel) in [
+            ("Advanced", vec2(1440.0, 900.0), false, None),
+            ("Printing and Proofing", vec2(1440.0, 900.0), false, None),
+            ("Essentials", vec2(1440.0, 900.0), false, Some("character")),
+            ("Printing and Proofing", vec2(900.0, 560.0), true, None),
+        ] {
+            let (mut h, story) = typing_on(name, size, mac);
+            if panel.is_some() {
+                h.state_mut().app.ui.open_panel = panel.map(str::to_string);
+                h.run_steps(4);
+            }
+            let name = &format!("{name} {size:?} {panel:?}");
+            let before = story_text(&mut h, story);
+            let count = fields(&h, designcraft_fonts::DEFAULT_FAMILY).len();
+            assert_eq!(count, 3, "{name}: the font fields are shown");
+            for k in 0..count {
+                h.state_mut().app.run("type.char", json!({"attrs": {"fontFamily": designcraft_fonts::DEFAULT_FAMILY}})).unwrap();
+                h.run_steps(4);
+                let at = fields(&h, designcraft_fonts::DEFAULT_FAMILY)[k];
+                search_in_menu(&mut h, at, &format!("{name}, field {k}"));
+                assert_eq!(family(&mut h), "Noto Sans", "{name}, field {k}");
+                assert_eq!(story_text(&mut h, story), before, "{name}, field {k}");
+            }
+        }
+    }
+
+    /// The font fields away from the text: the Glyphs panel, Paragraph Style Options › Basic
+    /// Character Formats and Find/Replace Font's Replace With.
+    #[test]
+    fn font_fields_in_panels_and_dialogs_search() {
+        let paragraph = json!({"name": designcraft_doc::BASIC_PARAGRAPH, "section": "chars"});
+        for (what, panel, dialog, shown) in [
+            ("Glyphs", Some("glyphs"), None, designcraft_fonts::DEFAULT_FAMILY),
+            ("Paragraph Style Options", None, Some(("paragraphStyleOptions", paragraph)), designcraft_fonts::DEFAULT_FAMILY),
+            ("Find/Replace Font", None, Some(("findFont", json!({}))), "—"),
+        ] {
+            let app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+            let mut h = test_window::open(app, vec2(1440.0, 900.0));
+            let dialog_id = dialog.as_ref().map(|(id, _)| id.to_string());
+            h.state_mut().app.ui.open_panel = panel.map(str::to_string);
+            h.state_mut().app.ui.dialog = dialog.map(|(id, fields)| crate::dialogs::Dialog::new(id, fields));
+            h.run_steps(4);
+            let at = *fields(&h, shown).first().unwrap_or_else(|| panic!("{what}: the font field is shown"));
+            search_in_menu(&mut h, at, what);
+            assert_eq!(h.state().app.ui.dialog.as_ref().map(|d| d.id.clone()), dialog_id, "{what}: Return in the menu leaves the dialog open");
+            assert!(!fields(&h, "Noto Sans").is_empty(), "{what}: the field shows the family picked");
+            // Escape closes the menu only.
+            let at = fields(&h, "Noto Sans")[0];
+            click_at(&mut h, at.center());
+            assert!(h.ctx.text_edit_focused(), "{what}: the menu opened");
+            h.key_press(egui::Key::Escape);
+            h.run_steps(4);
+            assert!(!h.ctx.text_edit_focused(), "{what}: Escape closed the menu");
+            assert_eq!(h.state().app.ui.dialog.as_ref().map(|d| d.id.clone()), dialog_id, "{what}: Escape in the menu leaves the dialog open");
+        }
     }
 }

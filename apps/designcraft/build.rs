@@ -17,7 +17,7 @@ fn main() {
         .set("ProductName", "MIXEL Design")
         .set("FileDescription", "MIXEL Design page layout")
         .set("CompanyName", "MIXEL")
-        .set("LegalCopyright", "Copyright (c) the MIXEL Design authors. MIT OR Apache-2.0.")
+        .set("LegalCopyright", "Copyright (c) the DesignCraft authors. MIT OR Apache-2.0. MIXEL Design modifications by MIXEL contributors.")
         .set("OriginalFilename", "designcraft.exe")
         .set("InternalName", "designcraft");
     if let Err(e) = res.compile() {

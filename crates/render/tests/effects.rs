@@ -120,7 +120,13 @@ fn drop_shadow_of_text_follows_the_glyphs() {
     let mut d = doc();
     let lid = d.default_layer();
     let (fid, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(10.0, 10.0, 150.0, 150.0), lid, "Shadow", ParaFormat::default()).unwrap();
-    d.story_mut(sid).unwrap().format_chars(0..6, |f| f.over.size = Some(40.0));
+    d.story_mut(sid).unwrap().format_chars(0..6, |f| {
+        f.over.font_family = Some("Noto Serif".into());
+        f.over.size = Some(32.0);
+    });
+    let composed = designcraft_compose::compose_story(&d, sid, &Default::default());
+    assert_eq!(composed.line_count(), 1, "the shadow fixture must stay on one line");
+    assert_eq!(composed.frames[0].lines[0].range, 0..6);
     let ds = &mut d.item_mut(fid).unwrap().effects.drop_shadow;
     ds.on = true;
     ds.distance = 4.0;

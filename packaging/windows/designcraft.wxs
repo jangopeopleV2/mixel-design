@@ -13,7 +13,7 @@
       Name="MIXEL Design"
       Manufacturer="MIXEL"
       Version="$(var.Version)"
-      UpgradeCode="49E87D30-BB68-4896-AA1D-F45C833CFC3C"
+      UpgradeCode="7AFB5762-2860-559C-945E-D9635819FFAA"
       Scope="perMachine"
       Compressed="yes"
       Language="1033">
@@ -26,8 +26,8 @@
 
     <Icon Id="DesigncraftIcon.ico" SourceFile="$(var.IconPath)" />
     <Property Id="ARPPRODUCTICON" Value="DesigncraftIcon.ico" />
-    <Property Id="ARPURLINFOABOUT" Value="https://getartcraft.com/apps/designcraft" />
-    <Property Id="ARPURLUPDATEINFO" Value="https://getartcraft.com/apps/designcraft" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/jangopeopleV2/mixel-design" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/jangopeopleV2/mixel-design" />
     <Property Id="ARPHELPLINK" Value="https://discord.gg/artcraft" />
 
     <StandardDirectory Id="ProgramFiles6432Folder">

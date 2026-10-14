@@ -136,13 +136,13 @@ fn build() -> designcraft_doc::Result<Document> {
     });
     // Styles.
     let serif = |style: &str, size: f64| CharAttrs {
-        font_family: Some("Source Serif 4".into()),
+        font_family: Some("Noto Serif".into()),
         font_style: Some(style.into()),
         size: Some(size),
         ..Default::default()
     };
     let sans = |style: &str, size: f64| CharAttrs {
-        font_family: Some("Source Sans 3".into()),
+        font_family: Some("Noto Sans".into()),
         font_style: Some(style.into()),
         size: Some(size),
         ..Default::default()
@@ -153,7 +153,7 @@ fn build() -> designcraft_doc::Result<Document> {
             "Body",
             Some(story::BASIC_PARAGRAPH),
             ParaAttrs { align: Some(Align::LeftJustified), first_line_indent: Some(12.0), hyph_min_word: Some(6), ..Default::default() },
-            CharAttrs { leading: Some(Leading::Points(13.5)), ..serif("Regular", 9.75) },
+            CharAttrs { leading: Some(Leading::Points(12.0)), ..serif("Regular", 9.0) },
         ));
         st.paragraph.push(para_style(
             "Footnote",
@@ -233,7 +233,7 @@ fn build() -> designcraft_doc::Result<Document> {
             "Cover Title",
             None,
             ParaAttrs { align: Some(Align::Left), hyphenate: Some(false), ..Default::default() },
-            CharAttrs { leading: Some(Leading::Points(82.0)), tracking: Some(-30.0), fill: Some("[Paper]".into()), ..serif("Bold", 84.0) },
+            CharAttrs { leading: Some(Leading::Points(72.0)), tracking: Some(-30.0), fill: Some("[Paper]".into()), ..serif("Bold", 72.0) },
         ));
         st.paragraph.push(para_style(
             "Cover Deck",

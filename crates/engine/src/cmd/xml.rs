@@ -305,7 +305,7 @@ pub fn specs() -> Vec<CommandSpec> {
             match str_param(p, "path") {
                 Some(path) => {
                     #[cfg(not(target_arch = "wasm32"))]
-                    std::fs::write(path, text.as_bytes()).map_err(|e| crate::EngineError::Other(format!("{path}: {e}")))?;
+                    crate::atomic::write_file(path, text.as_bytes())?;
                     Ok(json!({"path": path, "bytes": text.len()}))
                 }
                 None => Ok(json!({"text": text, "bytes": text.len()})),
@@ -524,8 +524,22 @@ mod tests {
         let x = s.execute("file.exportXml", &json!({})).unwrap()["text"].as_str().unwrap().to_string();
         assert!(x.contains("<note>See the <term>glossary</term> entry</note>"), "{x}");
         // Tag markers draw in the tag's colour (screen view only).
-        let d = s.doc().unwrap().doc.clone();
+        let mut d = s.doc().unwrap().doc.as_ref().clone();
         let col = d.xml.tags.iter().find(|t| t.name == "term").unwrap().color;
+        // A marker is one physical pixel wide. Center its left stem on a pixel so the
+        // exact-colour assertion measures its interior, independently of font advances.
+        let fid = designcraft_doc::ItemId(f["id"].as_u64().unwrap());
+        let sid = designcraft_doc::StoryId(f["story"].as_u64().unwrap());
+        let cs = s.cache.get(&d, sid, None);
+        let g = cs.frames[0].lines.iter().flat_map(|l| &l.glyphs).find(|g| g.byte == 8 && g.len > 0).unwrap();
+        assert_eq!(cs.styles[g.style as usize].xml_tag.as_deref(), Some("term"));
+        let item = d.item(fid).unwrap();
+        let x = (d.text_xf(item) * designcraft_geom::Point::new(g.x, 0.0)).x;
+        let pixel_x = 2.0 * (x - d.spreads[0].pages[0].bounds().x0);
+        let dx = (pixel_x.floor() + 0.5 - pixel_x) / 2.0;
+        assert!(dx.abs() <= 0.25, "only the subpixel phase of the render fixture changes");
+        let xf = item.xf;
+        d.item_mut(fid).unwrap().xf = designcraft_geom::Affine::translate((dx, 0.0)) * xf;
         let mut rr = designcraft_render::Renderer::new();
         rr.threads = 0;
         let count = |opts: &designcraft_render::RenderOptions, rr: &mut designcraft_render::Renderer| {

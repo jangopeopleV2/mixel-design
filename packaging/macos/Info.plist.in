@@ -43,7 +43,7 @@
   <key>NSRequiresAquaSystemAppearance</key>
   <false/>
   <key>NSHumanReadableCopyright</key>
-  <string>Copyright © the MIXEL Design authors. MIT OR Apache-2.0.</string>
+  <string>Copyright © the DesignCraft authors. MIT OR Apache-2.0. MIXEL Design modifications by MIXEL contributors.</string>
 
   <!-- Designcraft's own format. -->
   <key>UTExportedTypeDeclarations</key>

@@ -7,6 +7,7 @@ use designcraft_geom::{Rect, shapes};
 
 use super::*;
 
+mod assets;
 mod decorations;
 
 fn zip_files(files: &[(&str, &str)]) -> Vec<u8> {
@@ -70,7 +71,7 @@ const STYLES: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
   </RootCharacterStyleGroup>
   <RootParagraphStyleGroup Self="rp">
     <ParagraphStyle Self="ParagraphStyle/$ID/[No paragraph style]" Name="$ID/[No paragraph style]" PointSize="12">
-      <Properties><AppliedFont type="string">Source Serif 4</AppliedFont><Leading type="enumeration">Auto</Leading></Properties>
+      <Properties><AppliedFont type="string">Noto Serif</AppliedFont><Leading type="enumeration">Auto</Leading></Properties>
     </ParagraphStyle>
     <ParagraphStyle Self="ParagraphStyle/$ID/NormalParagraphStyle" Name="$ID/NormalParagraphStyle">
       <Properties><BasedOn type="string">$ID/[No paragraph style]</BasedOn></Properties>
@@ -425,6 +426,60 @@ fn imports_scalar_insets_in_object_style_without_replacing_frame_override() {
     let d = inset_fixture(r#"<TextFramePreference InsetSpacing="3"/>"#, styles);
     assert_eq!(d.styles.object.iter().find(|s| s.name == "Padded").unwrap().text_frame.as_ref().unwrap().inset, [9.0; 4]);
     assert_eq!(frame_inset(&d), [3.0; 4]);
+}
+
+/// A one-page spread part `Self` with one rectangle.
+fn one_frame_spread(id: &str) -> String {
+    format!(
+        r#"<idPkg:Spread xmlns:idPkg="http://ns.adobe.com/AdobeInDesign/idml/1.0/packaging">
+          <Spread Self="{id}">
+            <Page Self="{id}p" GeometricBounds="0 0 100 100" ItemTransform="1 0 0 1 0 0"/>
+            <Rectangle Self="{id}r" ItemTransform="1 0 0 1 0 0">
+              <Properties><PathGeometry><GeometryPathType PathOpen="false"><PathPointArray>
+                <PathPointType Anchor="10 10"/><PathPointType Anchor="10 50"/>
+                <PathPointType Anchor="50 50"/><PathPointType Anchor="50 10"/>
+              </PathPointArray></GeometryPathType></PathGeometry></Properties>
+            </Rectangle>
+          </Spread>
+        </idPkg:Spread>"#
+    )
+}
+
+/// Writers differ in how a designmap `src` spells its part: percent-encoded, another case,
+/// backslashes, a leading `./`. Those resolve; a part absent from the package is a warning that
+/// names it, not silently dropped objects.
+#[test]
+fn designmap_parts_match_leniently_and_missing_ones_are_reported() {
+    let designmap = r#"<Document xmlns:idPkg="http://ns.adobe.com/AdobeInDesign/idml/1.0/packaging" Self="d">
+          <idPkg:Spread src="Spreads/Spread_u1a%20b.xml"/>
+          <idPkg:Spread src="./spreads\SPREAD_u2.xml"/>
+          <idPkg:Spread src="Spreads/Spread_gone.xml"/>
+        </Document>"#;
+    let zip = zip_files(&[
+        ("designmap.xml", designmap),
+        ("Spreads/Spread_u1a b.xml", &one_frame_spread("u1")),
+        ("Spreads/Spread_u2.xml", &one_frame_spread("u2")),
+    ]);
+    let r = import_idml_report(&zip, &|_| None).unwrap();
+    assert_eq!(r.document.spreads.len(), 2, "both lenient spellings resolve");
+    assert!(r.document.spreads.iter().all(|sp| sp.items.len() == 1), "the spreads keep their frames");
+    assert_eq!(r.warnings.len(), 1, "{:?}", r.warnings);
+    assert!(r.warnings[0].contains("Spreads/Spread_gone.xml"), "{:?}", r.warnings);
+
+    // With every spread part missing the import fails, and the error names the part.
+    let only_missing = r#"<Document xmlns:idPkg="http://ns.adobe.com/AdobeInDesign/idml/1.0/packaging" Self="d">
+          <idPkg:Spread src="Spreads/Spread_gone.xml"/>
+        </Document>"#;
+    let err = import_idml(&zip_files(&[("designmap.xml", only_missing)])).unwrap_err();
+    assert!(err.to_string().contains("Spreads/Spread_gone.xml"), "{err}");
+}
+
+#[test]
+fn percent_decode_keeps_malformed_escapes() {
+    assert_eq!(import::percent_decode("a%20b%2"), "a b%2");
+    assert_eq!(import::percent_decode("%é%zz"), "%é%zz");
+    assert_eq!(import::uri_to_path("file:///C:/a%20b"), "C:/a b");
+    assert_eq!(import::uri_to_path("file:/a%bé"), "/a%bé");
 }
 
 #[test]
@@ -837,8 +892,8 @@ fn automatic_kerning_does_not_import_inactive_numeric_values() {
 fn cjk_composite_fonts_and_custom_kinsoku_are_document_resources() {
     let map = DESIGNMAP.replace("</Document>", r#"
       <KinsokuTable Self="KinsokuTable/Test" Name="Test" CantBeginLineChars="乙" CantEndLineChars="甲" CantBeSeparatedChars="—" HangingPunctuationChars="。"/>
-      <CompositeFont Self="CompositeFont/Mixed" Name="Mixed"><CompositeFontEntry Self="cf1" Name="Base" FontStyle="Regular"><Properties><AppliedFont type="string">Source Serif 4</AppliedFont></Properties></CompositeFontEntry>
-      <CompositeFontEntry Self="cf2" Name="Digits" CustomCharacters="0123456789" FontStyle="Regular" RelativeSize="80" BaselineShift="10"><Properties><AppliedFont type="string">Source Sans 3</AppliedFont></Properties></CompositeFontEntry></CompositeFont>
+      <CompositeFont Self="CompositeFont/Mixed" Name="Mixed"><CompositeFontEntry Self="cf1" Name="Base" FontStyle="Regular"><Properties><AppliedFont type="string">Noto Serif</AppliedFont></Properties></CompositeFontEntry>
+      <CompositeFontEntry Self="cf2" Name="Digits" CustomCharacters="0123456789" FontStyle="Regular" RelativeSize="80" BaselineShift="10"><Properties><AppliedFont type="string">Noto Sans</AppliedFont></Properties></CompositeFontEntry></CompositeFont>
     </Document>"#);
     let story = STORY.replace("<ParagraphStyleRange ", "<ParagraphStyleRange KinsokuSet=\"KinsokuTable/Test\" ");
     let bytes = zip_files(&[
@@ -852,8 +907,8 @@ fn cjk_composite_fonts_and_custom_kinsoku_are_document_resources() {
     ]);
     let d = import_idml(&bytes).unwrap();
     let f = &d.styles.composite_fonts[0];
-    assert_eq!(f.entry('1').unwrap().family, "Source Sans 3");
-    assert_eq!(f.entry('甲').unwrap().family, "Source Serif 4");
+    assert_eq!(f.entry('1').unwrap().family, "Noto Sans");
+    assert_eq!(f.entry('甲').unwrap().family, "Noto Serif");
     assert_eq!(f.entry('1').unwrap().relative_size, 0.8);
     let back = import_idml(&export_idml(&d)).unwrap();
     assert_eq!(back.styles.composite_fonts, d.styles.composite_fonts);

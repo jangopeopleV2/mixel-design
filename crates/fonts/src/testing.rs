@@ -3,21 +3,21 @@
 use skrifa::MetadataProvider;
 
 /// A font named `family` (style Regular) that maps exactly `chars`, all to one glyph (`X`): the bundled
-/// Source Sans 3 Regular with its `name` and `cmap` tables replaced. Stands in for a font that
+/// Noto Sans Regular with its `name` and `cmap` tables replaced. Stands in for a font that
 /// isn't installed (a system CJK font on a machine without it). `None` only if the bundled font
 /// can't be read.
 pub fn font_with(family: &str, chars: &[char]) -> Option<Vec<u8>> {
     font_with_glyph(family, chars, 'X')
 }
 
-/// [`font_with`], drawing every character as Source Sans 3's `glyph` (two fonts of one name that
+/// [`font_with`], drawing every character as Noto Sans's `glyph` (two fonts of one name that
 /// set the same text differently).
 pub fn font_with_glyph(family: &str, chars: &[char], glyph: char) -> Option<Vec<u8>> {
     let glyphs: Vec<(char, char)> = chars.iter().map(|c| (*c, glyph)).collect();
     font_mapping(family, &glyphs)
 }
 
-/// [`font_with`], mapping each character of `glyphs` to Source Sans 3's glyph for the character
+/// [`font_with`], mapping each character of `glyphs` to Noto Sans's glyph for the character
 /// paired with it (`('一', 'X')` draws 一 as X), so characters can have glyphs (and metrics) of
 /// their own. `None` if the bundled font can't be read or lacks a glyph asked for.
 pub fn font_mapping(family: &str, glyphs: &[(char, char)]) -> Option<Vec<u8>> {
@@ -27,7 +27,16 @@ pub fn font_mapping(family: &str, glyphs: &[(char, char)]) -> Option<Vec<u8>> {
     map.sort_unstable();
     map.dedup_by_key(|m| m.0);
     let mut tables = tables_of(base)?;
-    tables.retain(|(tag, _)| tag != b"name" && tag != b"cmap");
+    tables.retain(|(tag, _)| tag != b"name" && tag != b"cmap" && tag != b"BASE");
+    // Synthetic fixtures own their baseline metrics, independent of the bundled font version.
+    // These values exercise the existing BASE and OS/2 fallback contracts without an Adobe font.
+    for (tag, bytes) in &mut tables {
+        if tag == b"OS/2" {
+            bytes.get_mut(68..70)?.copy_from_slice(&1000i16.to_be_bytes());
+            bytes.get_mut(70..72)?.copy_from_slice(&(-326i16).to_be_bytes());
+        }
+    }
+    tables.push((*b"BASE", synthetic_base()));
 
     // `name`: format 0, family (1), subfamily (2) and PostScript name (6), Windows Unicode English.
     let ps: String = family.chars().filter(char::is_ascii_alphanumeric).chain("-Regular".chars()).collect();
@@ -65,6 +74,39 @@ pub fn font_mapping(family: &str, glyphs: &[(char, char)]) -> Option<Vec<u8>> {
     }
     tables.push((*b"cmap", cmap));
     assemble(base, tables)
+}
+
+/// Original minimal OpenType BASE 1.0 fixture (DFLT script; ideo = -170, romn = 0).
+/// Layout: https://learn.microsoft.com/en-us/typography/opentype/spec/base.
+/// This is generated table data, not bytes extracted from another font.
+fn synthetic_base() -> Vec<u8> {
+    let mut base = Vec::new();
+    // Header: horizontal Axis at byte 8, no vertical Axis.
+    for value in [1u16, 0, 8, 0] {
+        base.extend_from_slice(&value.to_be_bytes());
+    }
+    // Axis: BaseTagList at +4 and BaseScriptList at +14.
+    for value in [4u16, 14, 2] {
+        base.extend_from_slice(&value.to_be_bytes());
+    }
+    base.extend_from_slice(b"ideoromn");
+    // BaseScriptList: one DFLT script, with BaseScript at +8.
+    base.extend_from_slice(&1u16.to_be_bytes());
+    base.extend_from_slice(b"DFLT");
+    base.extend_from_slice(&8u16.to_be_bytes());
+    // BaseScript: BaseValues at +6, no MinMax or language records.
+    for value in [6u16, 0, 0] {
+        base.extend_from_slice(&value.to_be_bytes());
+    }
+    // BaseValues: roman baseline default; two format-1 coordinates at +8 and +12.
+    for value in [1u16, 2, 8, 12] {
+        base.extend_from_slice(&value.to_be_bytes());
+    }
+    for value in [-170i16, 0] {
+        base.extend_from_slice(&1u16.to_be_bytes());
+        base.extend_from_slice(&value.to_be_bytes());
+    }
+    base
 }
 
 /// Every table of the font file `font`: (tag, bytes).

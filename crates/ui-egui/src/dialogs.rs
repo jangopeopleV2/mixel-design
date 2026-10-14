@@ -2078,6 +2078,9 @@ pub fn confirm(app: &mut DesignApp) -> Result<Value, String> {
         "closeDocument" => {
             // The document may have moved in the tab row (or gone) while the dialog was open.
             let uid = d.fields.get("uid").and_then(Value::as_u64);
+            if d.b("quitting") {
+                return app.confirm_quit_document(uid.ok_or("Missing document in quit confirmation")?, d.b("discard"));
+            }
             let index = |app: &DesignApp| app.session.documents().iter().position(|doc| Some(doc.uid) == uid);
             let Some(i) = index(app) else { return Ok(Value::Null) };
             if !d.b("discard") {

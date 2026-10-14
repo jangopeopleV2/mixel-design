@@ -7,15 +7,6 @@ Maintained by [MIXEL](https://mixel.ch). Based on [storytold/designcraft](https:
 
 ---
 
-<p align="center">
-  <a href="https://getartcraft.com/">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/brand/artcraft-logo-white.svg">
-      <img alt="ArtCraft" src="docs/brand/artcraft-logo.svg" width="200">
-    </picture>
-  </a>
-</p>
-
 
 <h1 align="center">MIXEL Design</h1>
 
@@ -41,7 +32,7 @@ Maintained by [MIXEL](https://mixel.ch). Based on [storytold/designcraft](https:
 </p>
 
 <p align="center">
-  <a href="https://getartcraft.com/apps/designcraft"><b>MIXEL Design on getartcraft.com</b></a> ·
+  <a href="https://github.com/jangopeopleV2/mixel-design"><b>MIXEL Design project page</b></a> ·
   <a href="https://getartcraft.com/">ArtCraft</a> ·
   <a href="https://getartcraft.com/apps">All Crafting Apps</a>
 </p>
@@ -106,6 +97,8 @@ by its own renderer. Try it yourself with `File → New → Sample Document`, or
 - **Everywhere.** One Rust codebase for desktop and the web.
 
 ## Quick start
+
+The egui frontend requires Rust 1.95 or newer (including its shared `craft-ui` components).
 
 ```sh
 cargo run --release -p designcraft                         # desktop app (start screen)
@@ -192,14 +185,14 @@ egui frontend is a separate crate, so the UI can be swapped without touching the
 | L6 | `ui-egui` (InDesign-style UI, control channel) |
 | L7 | `apps/designcraft`, `apps/designcraft-cli`, `apps/designcraft-web` |
 
-- **Status and milestones:** [ROADMAP.md](ROADMAP.md)
+- **Status and milestones:** [ROADMAP.md](ROADMAP.md) (stage: pre-alpha); how close to InDesign: [`docs/target-app-parity.md`](docs/target-app-parity.md); known gaps: [`docs/gaps.md`](docs/gaps.md)
 - **Contributor and agent rules** (clean-room, asset policy, quality gates): [`AGENTS.md`](AGENTS.md)
 - **Bundled assets:** every one is listed with its licence in [`ASSETS.md`](ASSETS.md)
 - **App icon and colour:** a calico cat in a polka-dot scarf on MIXEL Design green `#7bb51c`; see [`assets/app-icon/`](assets/app-icon/README.md)
 
 ## Downloads
 
-**New to MIXEL Design?** Download it from the [MIXEL Design page on getartcraft.com](https://getartcraft.com/apps/designcraft). That's the easiest way to install it.
+**New to MIXEL Design?** Download it from the [MIXEL Design page on getartcraft.com](https://github.com/jangopeopleV2/mixel-design). That's the easiest way to install it.
 
 **Want a specific build or format?** On GitHub, the [latest release](https://github.com/storytold/designcraft/releases/latest) has every build listed below, and [all releases](https://github.com/storytold/designcraft/releases) has earlier versions and their notes. `<ver>` in the file names is the version number, and `SHA256SUMS.txt` lists a checksum for every file.
 
@@ -230,6 +223,8 @@ Installers and executables are code-signed.
 | Fedora/RHEL/openSUSE | `designcraft-<ver>-linux-x86_64.rpm` | `designcraft-<ver>-linux-aarch64.rpm` | |
 | Tarball | `designcraft-<ver>-linux-x86_64.tar.gz` | `designcraft-<ver>-linux-aarch64.tar.gz` | Unpack anywhere |
 
+RISC-V (riscv64): `designcraft-<ver>-linux-riscv64.tar.gz` only, cross-compiled; needs glibc 2.39+ (Ubuntu 24.04 or newer).
+
 ### FreeBSD
 
 | Build | File |
@@ -256,7 +251,7 @@ stand on its own.
 | <img src="https://raw.githubusercontent.com/storytold/lightcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.light.png" alt="" width="32" height="32"> | **MIXEL Light** | Photo library and raw development | [GitHub](https://github.com/storytold/lightcraft) | [Website](https://getartcraft.com/apps/lightcraft) |
 | <img src="https://raw.githubusercontent.com/storytold/pdfcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.print.png" alt="" width="32" height="32"> | **MIXEL Print** | Reading, organizing and protecting PDFs | [GitHub](https://github.com/storytold/pdfcraft) | [Website](https://getartcraft.com/apps/pdfcraft) |
 | <img src="https://raw.githubusercontent.com/storytold/effectcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.effects.png" alt="" width="32" height="32"> | **MIXEL Effects** | Motion graphics and visual effects | [GitHub](https://github.com/storytold/effectcraft) | [Website](https://getartcraft.com/apps/effectcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/designcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.design.png" alt="" width="32" height="32"> | **MIXEL Design** | **Page layout and publishing · you are here** | [GitHub](https://github.com/storytold/designcraft) | [Website](https://getartcraft.com/apps/designcraft) |
+| <img src="https://raw.githubusercontent.com/storytold/designcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.design.png" alt="" width="32" height="32"> | **MIXEL Design** | **Page layout and publishing · you are here** | [GitHub](https://github.com/storytold/designcraft) | [Website](https://github.com/jangopeopleV2/mixel-design) |
 
 And [**ArtCraft**](https://getartcraft.com/) itself, our AI image and video studio for artists who want real control.
 
@@ -279,13 +274,14 @@ And [**ArtCraft**](https://getartcraft.com/) itself, our AI image and video stud
   <a href="https://discord.gg/artcraft"><b>discord.gg/artcraft</b></a> ·
   <a href="https://getartcraft.com/">getartcraft.com</a> ·
   <a href="https://getartcraft.com/apps">The Crafting Apps</a> ·
-  <a href="https://getartcraft.com/apps/designcraft">MIXEL Design</a>
+  <a href="https://github.com/jangopeopleV2/mixel-design">MIXEL Design</a>
 </p>
 
 ## License and credits
 
 MIXEL Design is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
-Copyright (c) 2026 ArtCraft Team and the MIXEL Design contributors. Required notices are in [NOTICE](NOTICE).
+Copyright (c) 2026 ArtCraft Team and the DesignCraft contributors. Required notices are in [NOTICE](NOTICE).
+MIXEL Design modifications by MIXEL contributors.
 
 Bundled fonts, icons, images and other assets keep their own open licenses; each one is listed
 with its author, source and license in [ASSETS.md](ASSETS.md).
@@ -293,16 +289,12 @@ with its author, source and license in [ASSETS.md](ASSETS.md).
 The bundled fonts, and the craft-fonts fonts embedded by release builds, are under the SIL Open
 Font License; all UI icons are drawn in code and are original.
 
-The ArtCraft name, wordmark and logos in [`docs/brand/`](docs/brand/) are trademarks of the
-ArtCraft Team and are not covered by this license. They may be used only unmodified, and only as
-part of this repository and MIXEL Design, under [`docs/brand/LICENSE-brand.txt`](docs/brand/LICENSE-brand.txt).
-Forks and modified versions must remove them.
+The upstream ArtCraft name, wordmark and logos in [`docs/brand/`](docs/brand/) are trademarks of the ArtCraft Team under [`docs/brand/LICENSE-brand.txt`](docs/brand/LICENSE-brand.txt). They are retained as upstream source provenance, excluded from the MIXEL application, and never used as MIXEL branding. This fork identifies its ArtCraft origins in plain text and uses an original MIXEL monogram.
 
 <sub>Adobe, Photoshop, Illustrator, Premiere Pro, Lightroom, Acrobat, After Effects and InDesign are trademarks or registered trademarks of Adobe Inc. in the United States and/or other countries. MIXEL Design is an independent, open-source project and is not affiliated with, sponsored by or endorsed by Adobe Inc.; these names are used only to describe the workflows it is compatible with.</sub>
 
 <br>
 
 <p align="center">
-  <a href="https://getartcraft.com/"><img alt="ArtCraft" src="docs/brand/artcraft-mark.svg" width="28"></a><br>
-  <sub>Made by the <a href="https://getartcraft.com/">ArtCraft</a> team and community.</sub>
+  <sub>Based on upstream work by the <a href="https://getartcraft.com/">ArtCraft</a> team and community.</sub>
 </p>

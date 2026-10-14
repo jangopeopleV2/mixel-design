@@ -185,10 +185,13 @@ fn narrow_worst(para: ParaAttrs) -> f64 {
     let para = ParaAttrs { align: Some(Align::LeftJustified), first_line_indent: Some(12.0), hyph_min_word: Some(6), ..para };
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
-    let (_, sid) = d
-        .add_text_frame(SpreadRef::Doc(0), Rect::new(0.0, 0.0, 170.67, 2000.0), lid, SWATCH_TEXT, ParaFormat { para, ..Default::default() })
-        .unwrap();
-    d.story_mut(sid).unwrap().format_chars(0..SWATCH_TEXT.len(), |f| f.over.size = Some(9.75));
+    let (_, sid) =
+        d.add_text_frame(SpreadRef::Doc(0), Rect::new(0.0, 0.0, 180.0, 2000.0), lid, SWATCH_TEXT, ParaFormat { para, ..Default::default() }).unwrap();
+    // Pin the quality fixture's face independently of the document's default font.
+    d.story_mut(sid).unwrap().format_chars(0..SWATCH_TEXT.len(), |f| {
+        f.over.font_family = Some("Noto Serif".into());
+        f.over.size = Some(9.75);
+    });
     let cs = compose_story(&d, sid, &ComposeOptions::default());
     let mut worst = 0.0f64;
     for l in all_lines(&cs) {
@@ -204,8 +207,8 @@ fn narrow_worst(para: ParaAttrs) -> f64 {
 
 #[test]
 fn justified_narrow_column_has_no_extreme_lines() {
-    // Word spacing only (InDesign's defaults: letter spacing 0%, glyph scaling 100%). The first
-    // line can't do better than ~2.7: "…together. A re-" is the longest first line that fits.
+    // Word spacing only: letter spacing 0%, glyph scaling 100%. The narrow fixed measure
+    // exercises automatic hyphenation and word-space stretch with the pinned fixture face.
     let words_only = narrow_worst(ParaAttrs::default());
     assert!(words_only < 4.5, "loose line ratio {words_only}");
     // A typical magazine body setup: letter spacing −5…10% and glyph scaling 97…103% absorb the rest.
@@ -350,10 +353,11 @@ fn lines_per_column(height: f64) -> usize {
 fn keep_with_next_moves_a_heading() {
     let h = 200.0;
     let n = lines_per_column(h);
-    let body = "Body text that follows the heading.";
+    let body = "Body follows.";
     let (mut d, sid, _) = keep_doc(n - 1, &["Heading", body], h);
     let cs = compose_story(&d, sid, &ComposeOptions::default());
     assert_eq!(column_of_para(&cs, n - 1), vec![0], "without keeps the heading ends column 0");
+    assert_eq!(column_of_para(&cs, n), vec![1], "the short body occupies one line in column 1");
     d.story_mut(sid).unwrap().paras[n - 1].para.keep_with_next = Some(1);
     let cs = compose_story(&d, sid, &ComposeOptions::default());
     assert_eq!(column_of_para(&cs, n - 1), vec![1]);
@@ -475,7 +479,11 @@ fn corpus_stats(align: Align, measure: f64, size: f64) -> CorpusStats {
     let lid = d.default_layer();
     let (_, sid) =
         d.add_text_frame(SpreadRef::Doc(0), Rect::new(0.0, 0.0, measure, 100_000.0), lid, &text, ParaFormat { para, ..Default::default() }).unwrap();
-    d.story_mut(sid).unwrap().format_chars(0..text.len(), |f| f.over.size = Some(size));
+    // Keep the fixed measures and strict quality limits tied to one bundled face.
+    d.story_mut(sid).unwrap().format_chars(0..text.len(), |f| {
+        f.over.font_family = Some("Noto Serif".into());
+        f.over.size = Some(size);
+    });
     let cs = compose_story(&d, sid, &ComposeOptions::default());
     assert!(!cs.is_overset());
     let mut st = CorpusStats::default();
@@ -501,7 +509,8 @@ fn corpus_stats(align: Align, measure: f64, size: f64) -> CorpusStats {
 #[test]
 fn golden_corpus_spacing() {
     let mut total = CorpusStats::default();
-    for &(measure, size) in &[(120.0, 9.0), (170.67, 9.75), (240.0, 10.0), (340.0, 11.0)] {
+    // Fixed Noto Serif geometry covers narrow, ordinary and wide columns with the same quality limits.
+    for &(measure, size) in &[(120.0, 9.0), (225.0, 9.75), (250.0, 10.0), (340.0, 11.0)] {
         for align in [Align::LeftJustified, Align::Left] {
             let st = corpus_stats(align, measure, size);
             let avg = st.sum_spacing / st.lines.max(1) as f64;
@@ -1372,6 +1381,23 @@ fn spanish_text_gets_spanish_hyphenation() {
 }
 
 #[test]
+fn portuguese_text_gets_portuguese_hyphenation() {
+    let text = "matemática matemática matemática matemática matemática matemática";
+    let (mut d, sid, _) = doc_with(text, Rect::new(36.0, 36.0, 76.0, 700.0), ParaAttrs::default());
+    let st = d.story_mut(sid).unwrap();
+    let n = st.len();
+    st.format_chars(0..n, |f| f.over.language = Some("Portuguese: Brazilian".into()));
+    let cs = compose_story(&d, sid, &ComposeOptions::default());
+    let breaks: Vec<&str> = all_lines(&cs).into_iter().filter(|l| l.hyphenated).map(|l| text[l.range.clone()].trim_end()).collect();
+    assert!(!breaks.is_empty(), "Portuguese text is hyphenated");
+    // Portuguese syllables: ma-te-má-tica.
+    for b in breaks {
+        let tail = b.rsplit(' ').next().unwrap_or(b);
+        assert!(["ma", "mate", "matemá"].contains(&tail), "{b:?}");
+    }
+}
+
+#[test]
 fn cjk_aki_adds_space_without_scaling_outlines() {
     let (mut d, sid, _) = doc_with("AB", Rect::new(0.0, 0.0, 300.0, 100.0), ParaAttrs::default());
     let old = compose_story(&d, sid, &ComposeOptions::default());
@@ -1428,8 +1454,8 @@ fn cjk_composite_font_selects_entries_before_shaping() {
     std::sync::Arc::make_mut(&mut d.styles).composite_fonts.push(CompositeFont {
         name: "Mixed".into(),
         entries: vec![
-            CompositeFontEntry { family: "Source Serif 4".into(), ..Default::default() },
-            CompositeFontEntry { characters: "0123456789".into(), family: "Source Sans 3".into(), relative_size: 0.5, ..Default::default() },
+            CompositeFontEntry { family: "Noto Serif".into(), ..Default::default() },
+            CompositeFontEntry { characters: "0123456789".into(), family: "Noto Sans".into(), relative_size: 0.5, ..Default::default() },
         ],
     });
     d.story_mut(sid).unwrap().format_chars(0..3, |f| f.over.font_family = Some("CompositeFont/Mixed".into()));
@@ -1754,21 +1780,21 @@ fn arabic_character_overrides_mirror_brackets_using_final_levels() {
 
 #[test]
 fn language_picks_localized_forms_through_the_word_cache() {
-    // Source Serif 4 has a Turkish `locl` form of `i`; the same words in English and Turkish
+    // Noto Serif has a Romanian `locl` form of `ş`; the same words in English and Romanian
     // (both shaped word by word through the cache) keep their own forms.
-    let text = "in in in in";
+    let text = "şn şn şn şn";
     let (mut d, sid, _) = doc_with(text, Rect::new(36.0, 36.0, 500.0, 200.0), ParaAttrs::default());
-    d.story_mut(sid).unwrap().format_chars(6..text.len(), |f| f.over.language = Some("Turkish".into()));
+    d.story_mut(sid).unwrap().format_chars(8..text.len(), |f| f.over.language = Some("Romanian".into()));
     let cs = compose_story(&d, sid, &ComposeOptions::default());
     let gid_at = |byte: usize| all_lines(&cs).iter().flat_map(|l| l.glyphs.iter()).find(|g| g.byte == byte).map(|g| g.gid).unwrap();
-    assert_eq!(gid_at(0), gid_at(3), "English i");
-    assert_eq!(gid_at(6), gid_at(9), "Turkish i");
-    assert_ne!(gid_at(0), gid_at(6), "Turkish i takes its localized form");
+    assert_eq!(gid_at(0), gid_at(4), "English ş");
+    assert_eq!(gid_at(8), gid_at(12), "Romanian ş");
+    assert_ne!(gid_at(0), gid_at(8), "Romanian ş takes its localized form");
     // A single word is shaped directly, in its language too.
-    let (mut d, sid, _) = doc_with("i", Rect::new(36.0, 36.0, 500.0, 200.0), ParaAttrs::default());
-    d.story_mut(sid).unwrap().format_chars(0..1, |f| f.over.language = Some("Turkish".into()));
+    let (mut d, sid, _) = doc_with("ş", Rect::new(36.0, 36.0, 500.0, 200.0), ParaAttrs::default());
+    d.story_mut(sid).unwrap().format_chars(0.."ş".len(), |f| f.over.language = Some("Romanian".into()));
     let cs = compose_story(&d, sid, &ComposeOptions::default());
-    assert_eq!(all_lines(&cs)[0].glyphs[0].gid, gid_at(6), "Turkish i, shaped on its own");
+    assert_eq!(all_lines(&cs)[0].glyphs[0].gid, gid_at(8), "Romanian ş, shaped on its own");
 }
 
 #[test]
@@ -1832,7 +1858,7 @@ fn missing_glyphs_are_the_fonts_box_unless_fallback_is_on() {
     };
     assert!(!d.settings.glyph_fallback, "new documents draw missing glyphs as InDesign does");
     let (face, gid, adv) = glyph_at(&d, 1);
-    assert_eq!((face.family.as_str(), gid), (designcraft_fonts::DEFAULT_FAMILY, 0), "Source Serif 4's .notdef");
+    assert_eq!((face.family.as_str(), gid), (designcraft_fonts::DEFAULT_FAMILY, 0), "Noto Serif's .notdef");
     assert!((adv - face.advance(0) * 12.0 / face.upem).abs() < 1e-6, "its advance: {adv}");
     d.settings.glyph_fallback = true;
     let (face, gid, _) = glyph_at(&d, 1);
@@ -2025,7 +2051,7 @@ fn korean_lines_keep_kinsoku() {
     }
 }
 
-/// A synthetic font for vertical text: Source Sans 3 glyphs (CJK characters drawn as Latin ones)
+/// A synthetic font for vertical text: Noto Sans glyphs (CJK characters drawn as Latin ones)
 /// with vertical metrics, every glyph one em down the line and 120 units below its vertical
 /// origin, except ヸ (drawn as O): 1.024 em. No vertical forms. Added to the global database once.
 fn vertical_test_font() -> &'static str {
@@ -2170,7 +2196,7 @@ fn upright_glyphs_advance_by_their_vertical_metrics() {
 #[test]
 fn vertical_lines_fit_the_em_box() {
     // First baseline at the ascent: an upright line's ascent is its em box top, so the em box
-    // touches the frame's right edge. The synthetic font's em box is Source Sans 3's BASE one
+    // touches the frame's right edge. The synthetic font's em box is explicitly defined in BASE
     // (0.83 em, -0.17 em); Shippori Mincho's its OS/2 typo metrics (0.88 em, -0.12 em).
     let expected = [(vertical_test_font(), 16.6, 3.4)].into_iter().chain(shippori().map(|f| (f, 17.6, 2.4)));
     for (family, ascent, descent) in expected {
@@ -2509,13 +2535,20 @@ fn assert_span_layout(ft: &FrameText, h: usize) {
 
 #[test]
 fn text_after_a_spanning_paragraph_flows_below_it() {
-    let (d, sid, _, h) = span_doc(2, 3, Rect::new(0.0, 0.0, 540.0, 300.0));
+    let (mut d, sid, _, h) = span_doc(2, 3, Rect::new(0.0, 0.0, 540.0, 300.0));
+    // Fix the pre-heading line geometry independently of default-font metrics.
+    let body = ["Body line"; 9].join(&designcraft_doc::story::FORCED_LINE_BREAK.to_string());
+    let st = d.story_mut(sid).unwrap();
+    for range in st.para_ranges().into_iter().take(h).rev() {
+        st.replace(range, &body);
+    }
     let cs = compose_story(&d, sid, &ComposeOptions::default());
     assert!(!cs.is_overset());
     let ft = &cs.frames[0];
     assert_span_layout(ft, h);
     // The text before is balanced across the three columns above the heading.
     let before: Vec<&Line> = ft.lines.iter().filter(|l| l.para < h).collect();
+    assert_eq!(before.len(), 18, "the forced-line fixture must not wrap");
     let per_col = |c: u32| before.iter().filter(|l| l.column == c).count();
     let counts = [per_col(0), per_col(1), per_col(2)];
     assert!(counts.iter().all(|&n| n > 0), "{counts:?}");

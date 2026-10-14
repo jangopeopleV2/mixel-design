@@ -705,7 +705,7 @@ fn letters(n: u32) -> String {
 attr_set! {
     /// Character attributes (Character panel / character styles / the character part of paragraph styles).
     CharAttrs / CharProps {
-        font_family: String = "Source Serif 4".into(),
+        font_family: String = "Noto Serif".into(),
         font_style: String = "Regular".into(),
         /// Point size.
         size: f64 = 12.0,
@@ -1079,7 +1079,7 @@ mod tests {
         p.apply(&a);
         assert_eq!(p.size, 11.0);
         assert_eq!(p.tracking, 20.0);
-        assert_eq!(p.font_family, "Source Serif 4");
+        assert_eq!(p.font_family, "Noto Serif");
     }
 
     #[test]
@@ -1105,7 +1105,7 @@ mod tests {
         assert_eq!(d.count(), 1);
         let c = CharProps::common([&a, &b]);
         assert_eq!(c.size, None);
-        assert_eq!(c.font_family.as_deref(), Some("Source Serif 4"));
+        assert_eq!(c.font_family.as_deref(), Some("Noto Serif"));
     }
 
     #[test]

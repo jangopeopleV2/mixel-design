@@ -195,6 +195,8 @@ pub fn scripts(app: &mut DesignApp, ui: &mut egui::Ui) {
         if ui.button(crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, "Load…"))).clicked()
             && let Some(path) = app.services.pick_open.as_mut().and_then(|f| f("script"))
         {
+            #[cfg(target_arch = "wasm32")]
+            let _ = path;
             #[cfg(not(target_arch = "wasm32"))]
             match std::fs::read_to_string(&path) {
                 Ok(text) => {

@@ -404,7 +404,7 @@ fn drawn(bytes: &[u8]) -> (Vec<(String, kurbo::Rect)>, Vec<kurbo::Rect>) {
 
 #[test]
 fn missing_glyphs_print_as_boxes() {
-    // Source Serif 4 lacks 語: its .notdef box is drawn as a path, not as a .notdef glyph
+    // Noto Serif lacks 語: its .notdef box is drawn as a path, not as a .notdef glyph
     // (which PDF/A and PDF/UA forbid).
     let boxes = |paths: &[kurbo::Rect]| paths.iter().filter(|r| r.width() > 1.0 && r.width() < 12.0 && r.height() > 3.0 && r.height() < 12.0).count();
     let d = doc_with_text("a語b");

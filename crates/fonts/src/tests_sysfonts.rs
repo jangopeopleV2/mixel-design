@@ -4,13 +4,13 @@ use std::path::{Path, PathBuf};
 
 use super::*;
 
-const FAMILY: &str = "Sysfont Sans3";
+const FAMILY: &str = "Test Sans";
 
-/// A bundled Source Sans 3 file renamed [`FAMILY`] (as long as the original name).
+/// A bundled Noto Sans file renamed [`FAMILY`] (as long as the original name).
 fn renamed(file: &str) -> Vec<u8> {
     let mut data = std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts").join(file)).unwrap();
     let utf16 = |s: &str| s.encode_utf16().flat_map(u16::to_be_bytes).collect::<Vec<u8>>();
-    for (from, to) in [(utf16("Source Sans 3"), utf16(FAMILY)), (b"Source Sans 3".to_vec(), FAMILY.as_bytes().to_vec())] {
+    for (from, to) in [(utf16("Noto Sans"), utf16(FAMILY)), (b"Noto Sans".to_vec(), FAMILY.as_bytes().to_vec())] {
         let mut i = 0;
         while let Some(at) = data[i..].windows(from.len()).position(|w| w == from) {
             data[i + at..i + at + to.len()].copy_from_slice(&to);
@@ -51,8 +51,8 @@ fn font_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("dc-sysfonts-{}-{name}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(dir.join("Sub")).unwrap();
-    std::fs::write(dir.join("Sysfont-Regular.ttf"), renamed("SourceSans3-Regular.ttf")).unwrap();
-    std::fs::write(dir.join("Sub/Sysfont-Bold.TTF"), renamed("SourceSans3-Bold.ttf")).unwrap();
+    std::fs::write(dir.join("Sysfont-Regular.ttf"), renamed("NotoSans-Regular.ttf")).unwrap();
+    std::fs::write(dir.join("Sub/Sysfont-Bold.TTF"), renamed("NotoSans-Bold.ttf")).unwrap();
     std::fs::write(dir.join("damaged.ttf"), b"ttcf\0\x01\0\0\xff\xff\xff\xff").unwrap();
     std::fs::write(dir.join("readme.txt"), FAMILY).unwrap();
     dir
@@ -67,7 +67,7 @@ fn every_lookup_by_name_finds_installed_fonts_in_a_fresh_database() {
     let dir = font_dir("fresh");
     // Each lookup is the first thing a new database is asked. A folder listed twice is read once.
     let db = || FontDb::with_font_dirs(vec![dir.clone(), dir.join("Sub/..")]);
-    let f = db().face("sysfont sans3", "Bold");
+    let f = db().face("test sans", "Bold");
     assert_eq!((f.family.as_str(), f.style.as_str()), (FAMILY, "Bold"));
     assert!(db().has_family(FAMILY));
     assert!(has(&db().families(), FAMILY));
@@ -84,7 +84,7 @@ fn the_scan_reads_collections_and_loads_fonts_only_when_used() {
     let dir = font_dir("collection");
     std::fs::remove_file(dir.join("Sysfont-Regular.ttf")).unwrap();
     std::fs::remove_file(dir.join("Sub/Sysfont-Bold.TTF")).unwrap();
-    std::fs::write(dir.join("Sysfont.ttc"), collection(&[renamed("SourceSans3-Regular.ttf"), renamed("SourceSans3-Bold.ttf")])).unwrap();
+    std::fs::write(dir.join("Sysfont.ttc"), collection(&[renamed("NotoSans-Regular.ttf"), renamed("NotoSans-Bold.ttf")])).unwrap();
     let db = FontDb::with_font_dirs(vec![dir.clone()]);
     assert_eq!(db.styles(FAMILY), ["Regular", "Bold"]);
     // Cataloged, not loaded.

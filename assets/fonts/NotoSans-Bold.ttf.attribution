@@ -1,0 +1,8 @@
+asset:        NotoSans-Bold.ttf
+title:        NotoSans Bold document typeface
+author:       The Noto Project Authors
+source:       https://raw.githubusercontent.com/notofonts/notofonts.github.io/4e15001b9fb484cc871d7b2ad930cd2226edf260/fonts/NotoSans/unhinted/ttf/NotoSans-Bold.ttf
+license:      OFL-1.1
+license-file: assets/fonts/OFL-Noto.txt
+added:        2026-10-13 by Codex for MIXEL
+notes:        Unmodified official static font, pinned by source commit; SHA-256 87cb2d84472a7d66da659ee47b6cdb9552326e8c128245231f191b6ac72529d9. Replaces a retired Adobe-published face.

@@ -18,16 +18,18 @@ pub fn specs() -> Vec<CommandSpec> {
         cmd!(noundo "file.newSample", "Sample Document", ["Help"], None, "{} — a multi-page magazine sample", always, file_sample),
         cmd!(query "file.presets", "Document Presets", [], None, "{}", always, |_, _| Ok(serde_json::to_value(PRESETS).unwrap_or_default())),
         cmd!(noundo "file.open", "Open…", ["File"], Some("Cmd+O"),
-            "{path} — .designcraft or .idml; the fonts in a `Document Fonts` folder beside it load first → {index, documentFonts: faces loaded, warnings: font files skipped}",
+            "{path} — .designcraft or .idml; the fonts in a `Document Fonts` folder beside it load first → {index, documentFonts: faces loaded, warnings: font files skipped (and, for .idml, package parts missing)}",
             always, file_open),
         cmd!(noundo "file.openBytes", "Open Bytes", [], None, "{name, base64} — MIXEL Design JSON or an IDML package", always, file_open_bytes),
         cmd!(noundo "file.save", "Save", ["File"], Some("Cmd+S"), "{path?}", has_doc, file_save),
         cmd!(noundo "file.saveAs", "Save As…", ["File"], Some("Cmd+Shift+S"), "{path}", has_doc, file_save),
         cmd!(noundo "file.saveACopy", "Save a Copy…", ["File"], None, "{path} — writes the document without changing which file it is or its unsaved state", has_doc, |s, p| {
             let path = str_param(p, "path").ok_or_else(|| bad("file.saveACopy", "missing `path`"))?.to_string();
-            let bytes = to_bytes(&s.doc()?.doc);
+            let mut copy = (*s.doc()?.doc).clone();
+            super::datamerge::refresh_relative_paths(&mut copy, std::path::Path::new(&path));
+            let bytes = to_bytes(&copy);
             #[cfg(not(target_arch = "wasm32"))]
-            std::fs::write(&path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+            crate::atomic::write_file(&path, &bytes)?;
             Ok(json!({"path": path, "bytes": bytes.len()}))
         }),
         cmd!(noundo "file.revert", "Revert", ["File"], None, "{} — back to the last saved version (not undoable)", can_revert, file_revert),
@@ -37,7 +39,7 @@ pub fn specs() -> Vec<CommandSpec> {
         }),
         cmd!(noundo "file.recovery.save", "Save Recovery Data", [], None, "{dir?} — write every unsaved document to the recovery folder (the app does this on a timer)", always, |s, p| {
             let dir = recovery_dir(s, p)?;
-            Ok(json!({"saved": crate::recovery::save(s, &dir)?}))
+            Ok(json!({"saved": crate::recovery::save_tracked(s, &dir)?}))
         }),
         cmd!(noundo "file.recovery.open", "Recover Documents", [], None, "{dir?} — reopen documents left in the recovery folder (unsaved)", always, |s, p| {
             let dir = recovery_dir(s, p)?;
@@ -237,24 +239,26 @@ fn file_save(s: &mut Session, p: &Value) -> Result<Value> {
         .map(str::to_string)
         .or_else(|| st.path.clone())
         .ok_or_else(|| bad("file.save", "missing `path` (document has never been saved)"))?;
-    {
-        let mut d = (*st.doc).clone();
-        super::datamerge::refresh_relative_paths(&mut d, std::path::Path::new(&path));
-        if d.data_merge != st.doc.data_merge {
-            st.doc = Arc::new(d);
-            st.revision = st.revision.saturating_add(1);
-        }
-    }
-    let bytes = to_bytes(&st.doc);
+    // Prepare paths for the destination without changing the live document until persistence succeeds.
+    let mut saved = (*st.doc).clone();
+    super::datamerge::refresh_relative_paths(&mut saved, std::path::Path::new(&path));
+    let paths_changed = saved.data_merge != st.doc.data_merge;
+    let saved = if paths_changed { Arc::new(saved) } else { st.doc.clone() };
+    let bytes = to_bytes(&saved);
     #[cfg(not(target_arch = "wasm32"))]
-    std::fs::write(&path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    crate::atomic::write_file(&path, &bytes)?;
+    if paths_changed {
+        st.doc = saved;
+        st.revision = st.revision.saturating_add(1);
+    }
     st.path = Some(path.clone());
     st.saved_revision = st.revision;
     st.saved_doc = st.doc.clone();
     #[cfg(not(target_arch = "wasm32"))]
-    if let Some(dir) = &s.recovery_dir {
-        let uid = s.doc()?.uid;
-        crate::recovery::discard(dir, uid);
+    {
+        let recovery_dir = s.recovery_dir.clone();
+        let index = s.active_index().ok_or(EngineError::NoDocument)?;
+        crate::recovery::discard_document(s, index, recovery_dir.as_deref());
     }
     Ok(json!({"path": path, "bytes": bytes.len()}))
 }
@@ -313,8 +317,9 @@ fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
             .map(|(w, h)| (w.round().max(1.0) as u32, h.round().max(1.0) as u32))
             .ok_or_else(|| bad("file.place", "can't read that PDF page"))?,
     };
-    // 72 ppi by default unless the file says otherwise; scale so it fits the page when huge.
-    let (nw, nh) = eps_size.unwrap_or((pw as f64, ph as f64));
+    // 72 ppi by default unless the file says otherwise; scale so it fits the page when huge. PDF pages
+    // and SVGs keep their exact size: rounding it to whole points would stretch them unevenly.
+    let (nw, nh) = eps_size.or_else(|| designcraft_render::natural_size(&bytes, pdf_page as usize)).unwrap_or((pw as f64, ph as f64));
     // Image Import Options › Crop to: the frame shows that box of the PDF page.
     let crop_box = match str_param(p, "pdfCrop") {
         Some(k) if designcraft_render::is_pdf(&bytes) => {
@@ -336,9 +341,9 @@ fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
     let py = p.get("y").and_then(Value::as_f64);
     let want_w = p.get("width").and_then(Value::as_f64);
     s.edit(|d, sel| {
-        let aid = AssetId(d.alloc());
+        let fresh = AssetId(d.alloc());
         let mime = designcraft_render::image_mime(&bytes).to_string();
-        d.assets.insert(aid, Arc::new(Asset { page: pdf_page, id: aid, name, mime, link, data: Arc::new(bytes), pixels: Some((pw, ph)) }));
+        let aid = d.add_asset(Asset { page: pdf_page, id: fresh, name, mime, link, data: Arc::new(bytes), pixels: Some((pw, ph)) });
         // The width the whole page (or image) gets; the height follows the proportions.
         let w = match want_w {
             Some(w) => w,
@@ -350,14 +355,14 @@ fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
         let id = if let Some(fid) = target_frame {
             let it = d.item_mut(fid).ok_or(designcraft_doc::DocError::NoItem(fid))?;
             let r = it.inner_bounds();
-            // Fill frame proportionally.
+            // Fill the frame proportionally once. Auto-Fit stays off, so resizing the frame crops.
             let k = (r.width() / nw).max(r.height() / nh);
             let (gw, gh) = (nw * k, nh * k);
             it.content = Content::Graphic(Graphic {
                 asset: aid,
                 size: (nw, nh),
                 xf: Affine::translate((r.x0 + (r.width() - gw) / 2.0, r.y0 + (r.height() - gh) / 2.0)) * Affine::scale(k),
-                auto_fit: designcraft_doc::Fitting::FillProportionally,
+                auto_fit: Default::default(),
                 fit_align: 4,
                 crop: [0.0; 4],
             });
@@ -440,16 +445,13 @@ pub(crate) fn read_source(p: &Value) -> Result<(Vec<u8>, String, Option<String>)
 fn place_load(s: &mut Session, p: &Value) -> Result<Value> {
     let (bytes, name, link) = read_source(p)?;
     let (pw, ph) = designcraft_render::image_size(&bytes).ok_or_else(|| bad("place.load", "unsupported or corrupt image"))?;
+    let natural = designcraft_render::natural_size(&bytes, 0).unwrap_or((pw as f64, ph as f64));
     let aid = s.edit(|d, _| {
-        let aid = AssetId(d.alloc());
+        let fresh = AssetId(d.alloc());
         let mime = designcraft_render::image_mime(&bytes).to_string();
-        d.assets.insert(
-            aid,
-            Arc::new(Asset { page: 0, id: aid, name: name.clone(), mime, link: link.clone(), data: Arc::new(bytes), pixels: Some((pw, ph)) }),
-        );
-        Ok(aid)
+        Ok(d.add_asset(Asset { page: 0, id: fresh, name: name.clone(), mime, link: link.clone(), data: Arc::new(bytes), pixels: Some((pw, ph)) }))
     })?;
-    s.loaded = Some((aid, (pw as f64, ph as f64)));
+    s.loaded = Some((aid, natural));
     s.set_tool("placeGun");
     Ok(json!({"asset": aid.0, "name": name, "width": pw, "height": ph}))
 }
@@ -471,7 +473,7 @@ fn place_drop(s: &mut Session, p: &Value) -> Result<Value> {
                     asset: aid,
                     size: (nw, nh),
                     xf: Affine::translate((r.x0 + (r.width() - nw * k) / 2.0, r.y0 + (r.height() - nh * k) / 2.0)) * Affine::scale(k),
-                    auto_fit: designcraft_doc::Fitting::FillProportionally,
+                    auto_fit: Default::default(),
                     fit_align: 4,
                     crop: [0.0; 4],
                 });
@@ -520,7 +522,7 @@ fn snippet_export(s: &mut Session, p: &Value) -> Result<Value> {
     match str_param(p, "path") {
         Some(path) => {
             #[cfg(not(target_arch = "wasm32"))]
-            std::fs::write(path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+            crate::atomic::write_file(path, &bytes)?;
             Ok(json!({"path": path, "bytes": bytes.len(), "items": d.spreads.first().map(|s| s.items.len()).unwrap_or(0)}))
         }
         None => Ok(json!({"base64": base64_encode(&bytes), "bytes": bytes.len()})),
@@ -645,15 +647,14 @@ fn file_revert(s: &mut Session, _: &Value) -> Result<Value> {
         // As opened again: the fonts beside it now (unchanged files are shared, not read again).
         let (fonts, _, _) = load_document_fonts(&mut d, &path);
         let uid = s.doc()?.uid;
-        let st = s.doc_mut()?;
+        let recovery_dir = s.recovery_dir.clone();
+        let index = s.active_index().ok_or(EngineError::NoDocument)?;
         let mut fresh = DocState::new(d, Some(path.clone()));
         fresh.fonts = fonts;
         fresh.uid = uid;
-        fresh.revision = st.revision + 1;
-        *st = fresh;
-        if let Some(dir) = &s.recovery_dir {
-            crate::recovery::discard(dir, uid);
-        }
+        fresh.revision = s.doc()?.revision + 1;
+        crate::recovery::discard_document(s, index, recovery_dir.as_deref());
+        *s.doc_mut()? = fresh;
         Ok(json!({"path": path}))
     }
     #[cfg(target_arch = "wasm32")]
@@ -689,6 +690,24 @@ mod pdf_crop_tests {
         assert!((trim.width() - 612.0).abs() < 1e-3 && (trim.height() - 792.0).abs() < 1e-3, "{trim:?}");
         assert!(t.execute("file.place", &json!({"base64": b64, "name": "a.pdf", "pdfCrop": "nope"})).is_err());
     }
+
+    #[test]
+    fn placed_pdf_keeps_its_exact_page_size() {
+        // A 100.4 x 50.4 pt page placed 100.4 pt wide is 50.4 pt tall, not stretched to whole points.
+        let mut s = Session::new();
+        s.execute("file.new", &json!({"width": 100.4, "height": 50.4, "pages": 1})).unwrap();
+        let b64 = s.execute("file.exportPdf", &json!({})).unwrap()["base64"].as_str().unwrap().to_string();
+        let mut t = Session::new();
+        t.execute("file.new", &json!({})).unwrap();
+        let r = t.execute("file.place", &json!({"base64": b64, "name": "a.pdf", "width": 100.4, "x": 0, "y": 0})).unwrap();
+        let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+        let d = &t.doc().unwrap().doc;
+        let it = d.item(id).unwrap();
+        let b = it.bounds();
+        assert!((b.width() - 100.4).abs() < 1e-3 && (b.height() - 50.4).abs() < 1e-3, "{b:?}");
+        let designcraft_doc::Content::Graphic(g) = &it.content else { panic!("not a graphic") };
+        assert!((g.size.0 - 100.4).abs() < 1e-3 && (g.size.1 - 50.4).abs() < 1e-3, "{:?}", g.size);
+    }
 }
 
 #[cfg(test)]
@@ -716,6 +735,37 @@ mod layout_place_tests {
         assert!((bb.x0 - 100.0).abs() < 1e-6 && (bb.y0 - 100.0).abs() < 1e-6, "page top-left at 0,0: {bb:?}");
         assert!(d.stories.values().any(|st| st.text == "From page one"), "stories come along");
         assert!(b.execute("file.place", &json!({"base64": b64, "name": "src.idml", "layoutPage": 2})).is_err(), "page 2 is empty");
+    }
+}
+
+#[cfg(test)]
+mod save_tests {
+    use serde_json::json;
+
+    use crate::Session;
+
+    /// Saving over an existing document replaces it whole and leaves nothing beside it.
+    #[test]
+    fn save_replaces_the_existing_file_without_leftovers() {
+        let dir = std::env::temp_dir().join(format!("dc-save-atomic-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("doc.designcraft");
+        std::fs::write(&path, vec![b'x'; 1 << 20]).unwrap();
+        let mut s = Session::new();
+        s.execute("file.new", &json!({})).unwrap();
+        s.execute("frame.create", &json!({"rect": [36, 36, 300, 200], "content": "text", "text": "Saved whole", "caret": false})).unwrap();
+        s.execute("file.save", &json!({"path": path.to_string_lossy()})).unwrap();
+        s.execute("file.saveACopy", &json!({"path": path.to_string_lossy()})).unwrap();
+        let saved = super::from_bytes(&std::fs::read(&path).unwrap()).unwrap();
+        assert!(saved.stories.values().any(|st| st.text == "Saved whole"));
+        let names: Vec<_> = std::fs::read_dir(&dir).unwrap().map(|e| e.unwrap().file_name()).collect();
+        assert_eq!(names, ["doc.designcraft"], "no temporary file is left");
+        // A folder that doesn't exist: an error naming the path.
+        let missing = dir.join("missing").join("doc.designcraft");
+        let e = s.execute("file.save", &json!({"path": missing.to_string_lossy()})).unwrap_err();
+        assert!(e.to_string().contains("missing"), "{e}");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
 

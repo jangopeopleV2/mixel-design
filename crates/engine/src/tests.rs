@@ -181,6 +181,53 @@ fn sample_document_is_valid_and_composes() {
 }
 
 #[test]
+fn sample_document_has_complete_text_and_no_preflight_errors() {
+    let mut s = Session::new();
+    s.execute("file.newSample", &json!({})).unwrap();
+    let d = &s.doc().unwrap().doc;
+    let cover = d.stories.values().find(|story| story.text == "The Quiet\nArt of Layout").expect("the complete cover title");
+    let cs = s.cache.get(d, cover.id, None);
+    assert!(!cs.is_overset(), "cover story {} is overset at {:?}: {}", cover.id.0, cs.overset_at, cover.text);
+    let lines: Vec<_> = cs.frames.iter().flat_map(|frame| &frame.lines).collect();
+    assert_eq!(lines.len(), 2, "the complete cover title is two lines");
+    assert_eq!(lines.iter().map(|line| line.range.clone()).collect::<Vec<_>>(), vec![0..9, 10..23]);
+    assert_eq!(lines.iter().map(|line| &cover.text[line.range.clone()]).collect::<Vec<_>>(), vec!["The Quiet", "Art of Layout"]);
+    let article = d
+        .stories
+        .values()
+        .find(|story| story.frames.len() == 2 && story.text.starts_with("Every page begins as an empty field of possibility."))
+        .expect("the complete threaded article");
+    assert_eq!(article.text.matches("Every page begins as an empty field of possibility.").count(), 3, "all three body copies remain");
+    assert_eq!(article.text.matches("A layout tool earns its keep by making every one of those journeys effortless.").count(), 3);
+    assert_eq!(article.notes.len(), 1);
+    assert_eq!(article.notes[0].text.text, "Every image, swatch and paragraph in this sample is generated in code — no stock assets.");
+    let (mut notes, mut cells) = (0, 0);
+    for story in d.stories.values() {
+        let cs = s.cache.get(d, story.id, None);
+        assert!(!cs.is_overset(), "story {} is overset at {:?}: {}", story.id.0, cs.overset_at, story.text);
+        assert_eq!(cs.frames.last().map(|frame| frame.range.end), Some(story.len()), "story {} must render every source byte", story.id.0);
+        for frame in &cs.frames {
+            for note in &frame.notes {
+                notes += 1;
+                assert!(!note.text.is_overset(), "sample footnote is overset: {}", note.source);
+                assert_eq!(note.text.frames.last().map(|frame| frame.range.end), Some(note.source.len()), "the whole footnote must render");
+            }
+            for cell in frame.tables.iter().flat_map(|table| &table.cells) {
+                cells += 1;
+                assert!(!cell.overset && !cell.text.is_overset(), "sample table cell is overset: {}", cell.source);
+                assert_eq!(cell.text.frames.last().map(|frame| frame.range.end), Some(cell.source.len()), "the whole cell must render");
+            }
+        }
+    }
+    assert!(notes > 0, "the actual article footnote must be placed");
+    assert!(cells > 0, "the actual swatch table cells must be placed");
+    let report = s.execute("preflight.run", &json!({})).unwrap();
+    assert_eq!(report["errors"], 0, "sample preflight: {report}");
+    let errors: Vec<_> = report["issues"].as_array().unwrap().iter().filter(|issue| issue["severity"] == "error").collect();
+    assert!(errors.is_empty(), "sample preflight errors: {errors:?}");
+}
+
+#[test]
 fn every_command_has_metadata() {
     let mut ids = std::collections::HashSet::new();
     for c in command_specs() {
@@ -284,7 +331,15 @@ fn place_gun_click_drag_and_into_frame() {
     let f = s.execute("frame.create", &json!({"rect": [300, 300, 400, 400], "content": "graphic"})).unwrap()["id"].as_u64().unwrap();
     s.execute("place.load", &json!({"base64": b64})).unwrap();
     s.execute("place.drop", &json!({"frame": f})).unwrap();
-    assert!(matches!(s.doc().unwrap().doc.item(designcraft_doc::ItemId(f)).unwrap().content, designcraft_doc::Content::Graphic(_)));
+    let graphic_xf = |s: &Session| match &s.doc().unwrap().doc.item(designcraft_doc::ItemId(f)).unwrap().content {
+        designcraft_doc::Content::Graphic(g) => g.xf,
+        _ => panic!("not a graphic"),
+    };
+    let placed = graphic_xf(&s);
+    // Dragging the top edge down crops the top only: the image stays where it is.
+    s.execute("selection.set", &json!({"ids": [f]})).unwrap();
+    s.execute("transform.resize", &json!({"from": [300, 300, 400, 400], "to": [300, 340, 400, 400]})).unwrap();
+    assert_eq!(graphic_xf(&s), placed);
 }
 
 #[test]

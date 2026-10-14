@@ -289,7 +289,19 @@ mod hyphenation_exception_tests {
     fn user_exceptions_decide_where_words_break() {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
-        let r = s.execute("frame.create", &json!({"rect": [72, 72, 172, 400], "content": "text", "text": "a internationalization"})).unwrap();
+        // The allowed suffix must fit on its own, while the whole word must need a break.
+        // Otherwise an emergency split tests overflow handling rather than the user exception.
+        let attrs = designcraft_doc::CharProps::default();
+        let face = designcraft_fonts::FontDb::global().face(&attrs.font_family, &attrs.font_style);
+        let width =
+            |text: &str| designcraft_fonts::shape(&face, text, &[], |c| c).iter().map(|g| g.x_advance as f64).sum::<f64>() * attrs.size / face.upem;
+        let suffix = width("ternationalization");
+        let word = width("internationalization");
+        let measure = (suffix + word) / 2.0;
+        assert!(suffix < measure && measure < word, "the exception suffix must fit, but the whole word must not");
+        assert!(width("a in-") < measure, "the allowed first-line fragment must fit");
+        let r =
+            s.execute("frame.create", &json!({"rect": [72, 72, 72.0 + measure, 400], "content": "text", "text": "a internationalization"})).unwrap();
         let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
         s.execute("text.select", &json!({"story": r["story"], "anchor": 0, "focus": 0})).unwrap();
         s.execute("type.para", &json!({"hyphenate": true, "hyphLastWord": true})).unwrap();

@@ -699,6 +699,7 @@ const TABLE: &[(&str, [&str; 5])] = &[
     ),
     ("for", ["for", "pour", "por", "に対して", "行"]),
     ("About MIXEL Design", ["About MIXEL Design", "About MIXEL Design", "About MIXEL Design", "About MIXEL Design", "关于 MIXEL Design"]),
+    ("Quit MIXEL Design", ["MIXEL Design beenden", "Quitter MIXEL Design", "Salir de MIXEL Design", "MIXEL Design を終了", "退出 MIXEL Design"]),
     ("Accept All Changes", ["Accept All Changes", "Accept All Changes", "Accept All Changes", "Accept All Changes", "接受所有更改"]),
     ("Activate Document", ["Activate Document", "Activate Document", "Activate Document", "Activate Document", "激活文档"]),
     ("Add Anchor Point", ["Add Anchor Point", "Add Anchor Point", "Add Anchor Point", "Add Anchor Point", "添加锚点"]),
@@ -879,7 +880,10 @@ const TABLE: &[(&str, [&str; 5])] = &[
     ("Delete Item", ["Delete Item", "Delete Item", "Delete Item", "Delete Item", "删除项目"]),
     ("Delete Text Variable", ["Delete Text Variable", "Delete Text Variable", "Delete Text Variable", "Delete Text Variable", "删除文本变量"]),
     ("Delete Workspace…", ["Delete Workspace…", "Delete Workspace…", "Delete Workspace…", "Delete Workspace…", "删除工作区…"]),
-    ("MIXEL Design Website…", ["MIXEL Design Website…", "MIXEL Design Website…", "MIXEL Design Website…", "MIXEL Design Website…", "MIXEL Design 网站…"]),
+    (
+        "MIXEL Design Website…",
+        ["MIXEL Design Website…", "MIXEL Design Website…", "MIXEL Design Website…", "MIXEL Design Website…", "MIXEL Design 网站…"],
+    ),
     (
         "MIXEL Design on GitHub…",
         ["MIXEL Design on GitHub…", "MIXEL Design on GitHub…", "MIXEL Design on GitHub…", "MIXEL Design on GitHub…", "MIXEL Design 在 GitHub 上…"],
@@ -1569,7 +1573,7 @@ const TABLE: &[(&str, [&str; 5])] = &[
     ("Keyboard Increments", ["Keyboard Increments", "Keyboard Increments", "Keyboard Increments", "Keyboard Increments", "键盘增量"]),
     ("Liquid guides", ["Liquid guides", "Liquid guides", "Liquid guides", "Liquid guides", "自适应参考线"]),
     ("Markers", ["Markers", "Markers", "Markers", "Markers", "标记"]),
-    ("More ArtCraft apps", ["More ArtCraft apps", "More ArtCraft apps", "More ArtCraft apps", "More ArtCraft apps", "更多 ArtCraft 应用"]),
+    ("More MIXEL apps", ["More MIXEL apps", "More MIXEL apps", "More MIXEL apps", "More MIXEL apps", "更多 MIXEL 应用"]),
     ("Nested Line Styles", ["Nested Line Styles", "Nested Line Styles", "Nested Line Styles", "Nested Line Styles", "嵌套行样式"]),
     ("Nested Styles", ["Nested Styles", "Nested Styles", "Nested Styles", "Nested Styles", "嵌套样式"]),
     (
@@ -1689,13 +1693,13 @@ const TABLE: &[(&str, [&str; 5])] = &[
     ),
     ("Page · PPI", ["Page · PPI", "Page · PPI", "Page · PPI", "Page · PPI", "页面 · PPI"]),
     (
-        "Part of the ArtCraft suite of open creative tools.",
+        "Based on upstream work by ArtCraft.",
         [
-            "Part of the ArtCraft suite of open creative tools.",
-            "Part of the ArtCraft suite of open creative tools.",
-            "Part of the ArtCraft suite of open creative tools.",
-            "Part of the ArtCraft suite of open creative tools.",
-            "ArtCraft 开源创意工具套件的一部分。",
+            "Basiert auf der Arbeit am ursprünglichen Projekt von ArtCraft.",
+            "Basé sur le travail du projet d’origine d’ArtCraft.",
+            "Basado en el trabajo del proyecto original de ArtCraft.",
+            "ArtCraft による上流プロジェクトの成果に基づいています。",
+            "基于 ArtCraft 的上游项目成果。",
         ],
     ),
     ("Pasteboard Options", ["Pasteboard Options", "Pasteboard Options", "Pasteboard Options", "Pasteboard Options", "粘贴板选项"]),

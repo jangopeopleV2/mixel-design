@@ -1,0 +1,8 @@
+asset:        NotoSerif-Regular.ttf
+title:        NotoSerif Regular document typeface
+author:       The Noto Project Authors
+source:       https://raw.githubusercontent.com/notofonts/notofonts.github.io/4e15001b9fb484cc871d7b2ad930cd2226edf260/fonts/NotoSerif/unhinted/ttf/NotoSerif-Regular.ttf
+license:      OFL-1.1
+license-file: assets/fonts/OFL-Noto.txt
+added:        2026-10-13 by Codex for MIXEL
+notes:        Unmodified official static font, pinned by source commit; SHA-256 a15cfbbc1539d707115111d672d590a3d70d4f74b4c0a315956da20ae19a14e1. Replaces a retired Adobe-published face.

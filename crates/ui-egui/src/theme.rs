@@ -268,8 +268,8 @@ fn font_definitions(craft: &'static [designcraft_fonts::CraftFont], lang: &str) 
     let add = |fonts: &mut FontDefinitions, name: &str, data: &'static [u8]| {
         fonts.font_data.insert(name.into(), Arc::new(FontData::from_static(data)));
     };
-    add(&mut fonts, "ui", include_bytes!("../../../assets/fonts/SourceSans3-Regular.ttf"));
-    add(&mut fonts, "ui-semibold", include_bytes!("../../../assets/fonts/SourceSans3-Semibold.ttf"));
+    add(&mut fonts, "ui", include_bytes!("../../../assets/fonts/Inter-Regular.ttf"));
+    add(&mut fonts, "ui-semibold", include_bytes!("../../../assets/fonts/Inter-SemiBold.ttf"));
     add(&mut fonts, "mono", include_bytes!("../../../assets/fonts/JetBrainsMono-Regular.ttf"));
     fonts.families.entry(FontFamily::Proportional).or_default().insert(0, "ui".into());
     fonts.families.entry(FontFamily::Monospace).or_default().insert(0, "mono".into());
@@ -302,6 +302,13 @@ fn font_definitions(craft: &'static [designcraft_fonts::CraftFont], lang: &str) 
         let mut seen = std::collections::HashSet::new();
         fonts.families.insert(FontFamily::Name(family.into()), stack.filter(|n| seen.insert(n.clone())).collect());
     }
+    // Inter lacks the workspace dropdown's ▾. Keep every existing face ahead of this
+    // bundled OFL symbol fallback, including optional craft-fonts and the mono primary.
+    for stack in fonts.families.values_mut() {
+        if !stack.iter().any(|name| name == "mono") {
+            stack.push("mono".into());
+        }
+    }
     fonts
 }
 
@@ -332,18 +339,11 @@ pub fn apply(ctx: &egui::Context, t: &Tokens) {
     v.selection.stroke = Stroke::new(1.0, t.text_strong);
     v.hyperlink_color = t.accent;
     v.override_text_color = Some(t.text);
-    for (w, fill) in [
-        (&mut v.widgets.noninteractive, t.panel),
-        (&mut v.widgets.inactive, t.button),
-        (&mut v.widgets.hovered, t.hover),
-        (&mut v.widgets.active, t.tool_active),
-        (&mut v.widgets.open, t.hover),
-    ] {
-        w.bg_fill = fill;
-        w.weak_bg_fill = fill;
-        w.corner_radius = r;
-        w.fg_stroke = Stroke::new(1.0, t.text);
-    }
+    craft_ui::theme::WidgetPalette { noninteractive: t.panel, inactive: t.button, hovered: t.hover, active: t.tool_active, open: t.hover }.apply_to(
+        &mut v.widgets,
+        r,
+        Stroke::new(1.0, t.text),
+    );
     v.widgets.noninteractive.bg_stroke = Stroke::new(1.0, t.divider);
     v.widgets.inactive.bg_stroke = Stroke::new(1.0, t.field_border);
     v.widgets.hovered.bg_stroke = Stroke::new(1.0, t.field_border);
@@ -367,6 +367,34 @@ impl Tokens {
     /// Tokens stored by [`apply`].
     pub fn get(ctx: &egui::Context) -> Tokens {
         ctx.data(|d| d.get_temp::<Tokens>(egui::Id::NULL)).unwrap_or_else(|| Tokens::for_brightness(Brightness::Dark))
+    }
+}
+
+#[cfg(test)]
+mod symbol_font_tests {
+    use super::*;
+
+    #[test]
+    fn workspace_dropdown_glyph_is_available_without_reordering_any_ui_family() {
+        let definitions = font_definitions(&[], "en");
+        let mut previous = FontDefinitions::default().families;
+        previous.entry(FontFamily::Proportional).or_default().insert(0, "ui".into());
+        previous.entry(FontFamily::Monospace).or_default().insert(0, "mono".into());
+        previous.insert(FontFamily::Name("semibold".into()), vec!["ui-semibold".into(), "ui".into()]);
+        previous.insert(FontFamily::Name("arabic".into()), vec!["ui".into()]);
+        previous.insert(FontFamily::Name("arabic-semibold".into()), vec!["ui-semibold".into(), "ui".into()]);
+        let ctx = egui::Context::default();
+        ctx.set_fonts(definitions);
+        ctx.run_ui(egui::RawInput::default(), |_| {}).textures_delta.clear();
+        ctx.fonts_mut(|fonts| {
+            for (family, prefix) in &previous {
+                let stack = &fonts.definitions().families[family];
+                assert_eq!(&stack[..prefix.len()], prefix, "existing face order in {family:?}");
+                assert_eq!(stack.iter().filter(|name| name.as_str() == "mono").count(), 1, "one symbol face in {family:?}");
+                assert_eq!(stack.len(), prefix.len() + usize::from(!prefix.iter().any(|name| name == "mono")));
+                assert!(fonts.has_glyph(&FontId::new(13.0, family.clone()), '▾'), "workspace dropdown in {family:?}");
+            }
+        });
     }
 }
 
@@ -411,7 +439,7 @@ mod japanese_font_tests {
         let ctx = ctx_with(&[]);
         ctx.fonts_mut(|fonts| {
             // (egui's has_glyph reports false for characters of the face that also supplies the
-            // replacement glyph, as Source Sans Semibold does in the semibold stack.)
+            // replacement glyph, as Inter SemiBold does in the semibold stack.)
             let body = egui::FontId::new(13.0, egui::FontFamily::Proportional);
             assert!(fonts.has_glyphs(&body, "MIXEL Design"));
             for family in families() {
@@ -440,9 +468,7 @@ mod ukrainian_font_tests {
             .chain("ҐґЄєІіЇї".chars())
             .filter(|c| matches!(*c, '\u{0400}'..='\u{052f}'))
             .collect();
-        for (name, family, style) in
-            [("ui", "Source Sans 3", "Regular"), ("ui-semibold", "Source Sans 3", "Semibold"), ("mono", "JetBrains Mono", "Regular")]
-        {
+        for (name, family, style) in [("ui", "Inter", "Regular"), ("ui-semibold", "Inter", "SemiBold"), ("mono", "JetBrains Mono", "Regular")] {
             let data = &definitions.font_data[name].font;
             let face = db.face(family, style);
             assert_eq!(face.data(), data.as_ref(), "configured UI face {name}");

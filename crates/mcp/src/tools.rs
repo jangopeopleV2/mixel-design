@@ -479,7 +479,7 @@ fn render_page(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
     let path = a.get("path").and_then(Value::as_str);
     if let Some(path) = path {
         let png = designcraft_engine::cmd::base64_decode(&b64);
-        std::fs::write(path, png).map_err(|e| format!("write {path}: {e}"))?;
+        designcraft_engine::atomic::write_atomic(std::path::Path::new(path), &png).map_err(|e| format!("write {path}: {e}"))?;
     }
     Ok(ToolResult::image(b64, &json!({"width": r.get("width"), "height": r.get("height"), "path": path})))
 }
