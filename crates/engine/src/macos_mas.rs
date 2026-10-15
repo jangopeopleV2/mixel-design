@@ -571,54 +571,107 @@ mod imp {
 #[cfg(test)]
 mod tests {
     use super::store::*;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
+
+    fn native_path(relative: &str) -> PathBuf {
+        let path = std::env::current_dir().unwrap().join(relative);
+        assert!(path.is_absolute());
+        path
+    }
+
     #[test]
     fn corrupt_or_unsupported_store_is_rejected_without_replacement() {
+        let path = native_path("a");
+        let key = path.to_str().unwrap();
+        let valid = serde_json::to_vec(&serde_json::json!({
+            "version": 1,
+            "entries": { (key): { "bookmark": [1], "directory": false } }
+        }))
+        .unwrap();
+        assert!(decode(&valid).is_ok());
+        let empty = serde_json::to_vec(&serde_json::json!({
+            "version": 1,
+            "entries": { (key): { "bookmark": [], "directory": false } }
+        }))
+        .unwrap();
         for bytes in [
             b"bad".as_slice(),
             br#"{"version":2,"entries":{}}"#,
             br#"{"version":1,"entries":{"relative":{"bookmark":[1],"directory":false}}}"#,
-            br#"{"version":1,"entries":{"/a":{"bookmark":[],"directory":false}}}"#,
+            empty.as_slice(),
         ] {
             assert!(decode(bytes).is_err());
         }
     }
     #[test]
     fn duplicate_bookmark_paths_are_rejected_instead_of_silently_replaced() {
-        assert!(decode(br#"{"version":1,"entries":{"/a":{"bookmark":[1],"directory":false},"/a":{"bookmark":[2],"directory":true}}}"#).is_err());
+        let path = native_path("a");
+        let key = serde_json::to_string(path.to_str().unwrap()).unwrap();
+        let first = r#"{"bookmark":[1],"directory":false}"#;
+        let second = r#"{"bookmark":[2],"directory":true}"#;
+        let first_only = format!(r#"{{"version":1,"entries":{{{key}:{first}}}}}"#);
+        let second_only = format!(r#"{{"version":1,"entries":{{{key}:{second}}}}}"#);
+        assert!(decode(first_only.as_bytes()).is_ok());
+        assert!(decode(second_only.as_bytes()).is_ok());
+        let bytes = format!(r#"{{"version":1,"entries":{{{key}:{first},{key}:{second}}}}}"#);
+        assert!(decode(bytes.as_bytes()).is_err());
     }
     #[test]
     fn bookmark_payload_round_trips_exactly() {
-        let bytes = br#"{"version":1,"entries":{"/old/doc":{"bookmark":[0,1,255],"directory":false}}}"#;
-        let data = decode(bytes).unwrap();
-        assert_eq!(data.entries["/old/doc"].bookmark, [0, 1, 255]);
+        let path = native_path("old/doc");
+        let key = path.to_str().unwrap();
+        let bytes = serde_json::to_vec(&serde_json::json!({
+            "version": 1,
+            "entries": { (key): { "bookmark": [0, 1, 255], "directory": false } }
+        }))
+        .unwrap();
+        let data = decode(&bytes).unwrap();
+        assert_eq!(data.entries[key].bookmark, [0, 1, 255]);
         let encoded = serde_json::to_vec(&data).unwrap();
-        assert_eq!(decode(&encoded).unwrap().entries["/old/doc"].bookmark, [0, 1, 255]);
+        assert_eq!(decode(&encoded).unwrap().entries[key].bookmark, [0, 1, 255]);
     }
     #[test]
     fn moved_files_and_folders_use_resolved_paths_without_expanding_file_grants() {
-        assert_eq!(mapped(Path::new("/old/a"), Path::new("/old/a"), Path::new("/new/a"), false).unwrap(), Path::new("/new/a"));
-        assert_eq!(
-            mapped(Path::new("/old/folder/sub/a"), Path::new("/old/folder"), Path::new("/new/folder"), true).unwrap(),
-            Path::new("/new/folder/sub/a")
-        );
-        assert!(mapped(Path::new("/old/a/child"), Path::new("/old/a"), Path::new("/new/a"), false).is_none());
-        assert!(mapped(Path::new("/old/folderish/a"), Path::new("/old/folder"), Path::new("/new/folder"), true).is_none());
+        let old_file = native_path("old/a");
+        let new_file = native_path("new/a");
+        let old_folder = native_path("old/folder");
+        let new_folder = native_path("new/folder");
+        assert!(old_file.extension().is_none());
+        assert!(new_file.extension().is_none());
+        assert_eq!(mapped(&old_file, &old_file, &new_file, false).unwrap(), new_file);
+        assert_eq!(mapped(&old_folder.join("sub/a"), &old_folder, &new_folder, true).unwrap(), new_folder.join("sub/a"));
+        let file_child = old_file.join("child");
+        let folderish = native_path("old/folderish/a");
+        assert!(valid_path(&file_child));
+        assert!(valid_path(&folderish));
+        assert!(mapped(&file_child, &old_file, &new_file, false).is_none());
+        assert!(mapped(&folderish, &old_folder, &new_folder, true).is_none());
     }
     #[test]
     fn invalid_resolved_paths_and_traversal_are_rejected() {
-        for path in ["", "relative", "/old/../escape"] {
-            assert!(!valid_path(Path::new(path)));
+        let traversal = native_path("old/../escape");
+        assert!(traversal.components().any(|c| matches!(c, std::path::Component::ParentDir)));
+        for path in [Path::new(""), Path::new("relative"), traversal.as_path()] {
+            assert!(!valid_path(path));
         }
-        assert!(mapped(Path::new("/old/a"), Path::new("/old/a"), Path::new(""), false).is_none());
+        let old_file = native_path("old/a");
+        assert!(valid_path(&old_file));
+        assert!(mapped(&old_file, &old_file, Path::new(""), false).is_none());
     }
     #[test]
     fn unsigned_or_wrong_bundle_home_is_never_a_container() {
-        assert!(super::sandbox_home(Path::new("/Users/test/Library/Containers/ch.mixel.photo/Data"), "ch.mixel.photo"));
-        for path in
-            ["/Users/test", "/Users/test/Library/Containers/other/Data", "/tmp/Data", "/Users/test/Library/Containers/ch.mixel.photo/Data/../Data"]
-        {
-            assert!(!super::sandbox_home(Path::new(path), "ch.mixel.photo"));
+        let home = native_path("Users/test/Library/Containers/ch.mixel.photo/Data");
+        assert!(super::sandbox_home(&home, "ch.mixel.photo"));
+        let traversal = native_path("Users/test/../test/Library/Containers/ch.mixel.photo/Data");
+        assert!(traversal.components().any(|c| matches!(c, std::path::Component::ParentDir)));
+        for path in [
+            native_path("Users/test"),
+            native_path("Users/test/Library/Containers/other/Data"),
+            native_path("tmp/Data"),
+            home.join("..").join("Data"),
+            traversal,
+        ] {
+            assert!(!super::sandbox_home(&path, "ch.mixel.photo"));
         }
     }
     #[test]
@@ -632,11 +685,15 @@ mod tests {
     }
     #[test]
     fn persistence_encoding_rejects_oversized_bookmarks_before_writing() {
+        let path = native_path("picked");
+        let key = path.to_str().unwrap();
         let mut data = Store::default();
-        data.entries.insert("/picked".into(), Entry { bookmark: vec![1; 65537], directory: false });
+        data.entries.insert(key.into(), Entry { bookmark: vec![1, 2], directory: false });
+        assert_eq!(decode(&encode(&data).unwrap()).unwrap().entries[key].bookmark, [1, 2]);
+        data.entries.get_mut(key).unwrap().bookmark = vec![1; 65537];
         assert!(encode(&data).is_err());
-        data.entries.get_mut("/picked").unwrap().bookmark = vec![1, 2];
-        assert_eq!(decode(&encode(&data).unwrap()).unwrap().entries["/picked"].bookmark, [1, 2]);
+        data.entries.get_mut(key).unwrap().bookmark = vec![1, 2];
+        assert_eq!(decode(&encode(&data).unwrap()).unwrap().entries[key].bookmark, [1, 2]);
     }
     #[test]
     fn corrupt_store_backup_remains_exact_after_canonical_replacement() {
