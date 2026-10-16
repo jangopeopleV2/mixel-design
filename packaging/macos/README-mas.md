@@ -12,6 +12,13 @@ runtime are separate verification steps after packaging.
 
 ## Build provenance
 
+Validate deployment policy and generated app metadata without building or
+contacting Apple:
+
+```sh
+python3 -B packaging/macos/test_mas_package.py
+```
+
 Build the desktop package with its `mac-app-store` feature and release profile:
 
 ```sh
@@ -20,6 +27,9 @@ packaging/macos/package.sh --mas --build-only --arch aarch64
 ```
 
 The default architecture is `aarch64`. `x86_64` and `universal` are available.
+The arm64-only MAS variant targets macOS 12.0; the Intel and universal MAS
+variants target macOS 11.0. The compiler deployment target and generated app
+minimum use the same architecture policy.
 Photo and Light also enable their own `heif` feature; Light's normal default
 features remain enabled and its optional `rawnind-model` feature stays off.
 No CLI executable is built for MAS.
@@ -93,8 +103,9 @@ entitlements. It never re-signs a baseline executable or previous release.
 
 ## Resources and entitlements
 
-The app retains its product ID, full icon, document declarations, category, and
-minimum OS from `Info.plist.in`. Generated MAS metadata uses the workspace version
+The app retains its product ID, full icon, document declarations and category
+from `Info.plist.in`. The generated MAS minimum matches the architecture-specific
+compiler deployment target. MAS metadata uses the workspace version
 and explicit build number, with the explicit encryption declaration. Legal notices
 and embedded-font licenses are staged before signing, including the default
 vendored CJK font licenses, any external `CRAFT_FONTS_DIR` licenses, and pinned

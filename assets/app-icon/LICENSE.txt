@@ -11,3 +11,22 @@ third-party material. Licensed like the rest of DesignCraft, under either of
 at your option.
 
 Regenerate the derived files with packaging/icons.sh.
+
+
+2026-10-15 — current supplied-master MIXEL icon revision
+
+The complete preceding licence and attribution text is retained as the record
+of the earlier upstream app artwork. It does not describe or newly license the
+user-supplied MIXEL brand master used by this revision. Existing notices remain
+applicable to any unchanged assets or retained derivatives of that earlier art.
+
+The supplied mixel_core_clean_master.png and current branded composite app
+icons have reserved brand rights under LICENSE-MIXEL-brand.txt, identified as
+LicenseRef-MIXEL-Brand. They are not newly created MIT/Apache artwork.
+
+Only the independent new product-symbol vector layers (the product-symbol SVG
+group and separately supplied original glyph sources) are Copyright (c) 2026
+MIXEL contributors and licensed under MIT OR Apache-2.0, using the full terms in
+the repository LICENSE-MIT and LICENSE-APACHE. The product-name outlines come
+from the existing Inter SemiBold font; its complete notice is in OFL-Inter.txt.
+The separate glyph grant does not relicense the supplied brand or its name.

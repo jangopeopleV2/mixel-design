@@ -166,7 +166,13 @@ def external_fonts(env):
     return {"root": str(root), "files": entries, "sha256": digest(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode())}
 
 
-def build_environment(root, prefix, env):
+def deployment_minimum(arch):
+    minimums = {"aarch64": "12.0", "x86_64": "11.0", "universal": "11.0"}
+    require(arch in minimums, "Unsupported MAS architecture")
+    return minimums[arch]
+
+
+def build_environment(root, prefix, env, arch):
     result = dict(env)
     target = root / "target" / "macos-mas"
     requested = env.get("MACOS_MAS_TARGET_DIR")
@@ -178,7 +184,7 @@ def build_environment(root, prefix, env):
     require(not target.is_relative_to(root) or target.is_relative_to(root / "target" / "macos-mas"), "An in-checkout MAS target must stay under target/macos-mas")
     require("phase0" not in "/".join(target.parts).lower(), "MAS target must not use Phase 0 evidence directories")
     result["CARGO_TARGET_DIR"] = str(target)
-    result["MACOSX_DEPLOYMENT_TARGET"] = "11.0"
+    result["MACOSX_DEPLOYMENT_TARGET"] = deployment_minimum(arch)
     result[f"{prefix}_BUILD_SHA"] = command_text(["git", "-C", str(root), "rev-parse", "HEAD"]).strip()
     require(re.fullmatch(r"[0-9a-f]{40}", result[f"{prefix}_BUILD_SHA"]) is not None, "Invalid source commit")
     result[f"{prefix}_BUILD_DATE"] = dt.datetime.now(dt.timezone.utc).date().isoformat()
@@ -438,7 +444,7 @@ def desired_entitlements(here, slug, profile=None):
     return result
 
 
-def generated_info(here, config, version, number, source_sha, encryption):
+def generated_info(here, config, version, number, source_sha, encryption, arch):
     slug, title, _, _, brand, _ = config
     value = plistlib.loads((here / "Info.plist.in").read_bytes())
     substitutions = {"@VERSION@": version, "@SHORT_VERSION@": version, "@BUILD_SHA@": source_sha}
@@ -456,6 +462,7 @@ def generated_info(here, config, version, number, source_sha, encryption):
     require(value.get("CFBundleExecutable") == f"MIXEL {title}", "Info.plist executable name mismatch")
     require(bool(value.get("LSApplicationCategoryType")), "MAS category is missing")
     require(value.get("LSMinimumSystemVersion") == "11.0", "Unexpected deployment minimum")
+    value["LSMinimumSystemVersion"] = deployment_minimum(arch)
     value["CFBundleShortVersionString"] = version
     value["CFBundleVersion"] = number
     value["ITSAppUsesNonExemptEncryption"] = encryption
@@ -537,7 +544,7 @@ def package(root, config, args, env):
     here = root / "packaging" / "macos"
     number = build_number(env)
     version = load_version(root)
-    build_env, target = build_environment(root, prefix, env)
+    build_env, target = build_environment(root, prefix, env, args.arch)
     target.mkdir(parents=True, exist_ok=True)
     runs = target / "mas-runs"
     runs.mkdir(exist_ok=True)
@@ -587,7 +594,7 @@ def package(root, config, args, env):
         model_env = dict(build_env)
         model_env["DIST"] = str(work / "model-helper-dist")
         run(["/bin/bash", "-c", 'set -euo pipefail; . "$1/packaging/env.sh"; stage_models "$2"', "mixel-mas-models", str(root), str(models)], env=model_env, cwd=root, log=work / "ocr-models.log")
-    info = generated_info(here, config, version, number, receipt["sourceCommit"], encryption)
+    info = generated_info(here, config, version, number, receipt["sourceCommit"], encryption, args.arch)
     (contents / "Info.plist").write_bytes(plistlib.dumps(info, sort_keys=False))
     (contents / "PkgInfo").write_bytes(b"APPL????")
     shutil.copyfile(privacy[0], resources / "PrivacyInfo.xcprivacy")

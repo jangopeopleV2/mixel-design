@@ -1,0 +1,5 @@
+MIXEL brand artwork
+
+The base artwork is the exact user-supplied mixel_core_clean_master.png, provided and authorized for these seven MIXEL application icons by Michael on 2026-10-15. It is not newly authored open-source artwork. All existing rights in the MIXEL name and brand artwork remain with their respective owners; this package grants no general right to reuse or relicense them.
+
+New standalone product-symbol vector layers are original contributor work under MIT OR Apache-2.0. App-name outlines were rendered from existing Inter SemiBold; its SIL Open Font License is included for provenance. No font binary is shipped.

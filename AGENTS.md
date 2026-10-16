@@ -57,3 +57,28 @@ People trust DesignCraft with their layouts; a crash loses their work. **This ou
   GitHub profiles). Never hand-edit `contributors.json`.
 - Maintainers refresh the stats with `python3 ../../craftrules/scripts/contributors.py .` (it also
   re-verifies who wrote each `people.toml` entry; `--check` only verifies).
+
+
+## MIXEL supplied-brand application icons — owner direction, 2026-10-15
+
+The project owner expressly selected the user-supplied `mixel_core_clean_master.png`
+(SHA-256 `d968314eb375bfc4441e73fd6b4ace5db157128a0b591e10c5187532edc5b516`)
+as the brand base for MIXEL Photo, Vector, Film, Light, Print, Effects and Design,
+with independently drawn product symbols and outlined product names. This is a
+narrow additional first-party-brand use exception to the open-asset policy above;
+it does not change the existing ArtCraft terms or allow unrelated non-open assets.
+
+Only the current app-icon outputs and matching application favicons listed in this
+repository’s attribution index, generated from the approved supplied-master
+composition, and its associated official marketplace artwork fall within this
+exception. Supplied brand and branded composite rights are reserved under
+`assets/app-icon/LICENSE-MIXEL-brand.txt` (`LicenseRef-MIXEL-Brand`); do not label
+the supplied artwork contributor-original MIT/Apache art, invent its original
+author, or infer a general trademark/reuse licence. The independent product-symbol
+vector layer alone is original contributor work under MIT OR Apache-2.0.
+
+Inter SemiBold product-name outlines retain the complete `assets/app-icon/OFL-Inter.txt`
+notice. No new font binary is added. Every changed asset still needs its existing
+required attribution, actual hash where applicable, licence-file references and
+normal asset/CI verification. All existing Adobe bans, third-party licence checks,
+unchanged document-icon notices and prior licence history remain in force.
