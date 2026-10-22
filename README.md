@@ -1,9 +1,9 @@
 <!-- MIXEL-HEADER -->
 # MIXEL Design
 
-**MIXEL Design** is part of the MIXEL creative suite: an open-source, pure-Rust alternative to Adobe InDesign for macOS, Windows, Linux and the web.
+**MIXEL Design** is part of [MIXEL Creative Apps](https://www.mixel.ch).
 
-Maintained by [MIXEL](https://mixel.ch). Based on [storytold/designcraft](https://github.com/storytold/designcraft) from the ArtCraft Crafting Apps by Brandon Thomas; licensed under Apache-2.0 / MIT (see `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`). Upstream changes are merged from the `upstream` remote and re-branded with `rebrand.sh`.
+Maintained by [MIXEL](https://www.mixel.ch). Based on [storytold/designcraft](https://github.com/storytold/designcraft) by Brandon Thomas; licensed under Apache-2.0 / MIT (see `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`). Upstream changes are merged from the `upstream` remote and re-branded with `rebrand.sh`.
 
 ---
 
@@ -17,7 +17,6 @@ Maintained by [MIXEL](https://mixel.ch). Based on [storytold/designcraft](https:
 <p align="center">
   A fast, open-source, clean-room take on the Adobe InDesign workflow. It runs natively on macOS,
   Windows and Linux, and in the browser via WebAssembly.<br>
-  <i>By the ArtCraft team.</i>
 </p>
 
 <p align="center">
@@ -28,13 +27,9 @@ Maintained by [MIXEL](https://mixel.ch). Based on [storytold/designcraft](https:
 </p>
 
 <p align="center">
-  <a href="https://discord.gg/artcraft"><img alt="Join the ArtCraft community on Discord" src="https://img.shields.io/badge/Join%20us%20on%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" height="40"></a>
-</p>
-
-<p align="center">
   <a href="https://github.com/jangopeopleV2/mixel-design"><b>MIXEL Design project page</b></a> ·
-  <a href="https://getartcraft.com/">ArtCraft</a> ·
-  <a href="https://getartcraft.com/apps">All Crafting Apps</a>
+  <a href="https://www.mixel.ch">MIXEL Website</a> ·
+  <a href="https://www.mixel.ch">MIXEL Creative Apps</a>
 </p>
 
 <br>
@@ -44,10 +39,6 @@ Maintained by [MIXEL](https://mixel.ch). Based on [storytold/designcraft](https:
   <br><sub><b>Quarterly, Spring Issue</b>: threaded three-column body text, a wrapped pull quote and parent-page folios, all set by MIXEL Design's own paragraph composer.</sub>
 </p>
 
-> [!NOTE]
-> **ArtCraft is a community of artists from all walks of life.** Digital, generative, music,
-> games &mdash; if you make things, you're one of us. **[Come say hi on Discord](https://discord.gg/artcraft).**
-
 <p align="center">
   <a href="#the-sample-magazine">The sample magazine</a> ·
   <a href="#why-designcraft">Why MIXEL Design</a> ·
@@ -55,7 +46,7 @@ Maintained by [MIXEL](https://mixel.ch). Based on [storytold/designcraft](https:
   <a href="#web">Web</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="#downloads">Downloads</a> ·
-  <a href="#the-crafting-apps">The Crafting Apps</a> ·
+  <a href="#mixel-creative-apps">MIXEL Creative Apps</a> ·
   <a href="#license-and-credits">License and credits</a>
 </p>
 
@@ -192,7 +183,7 @@ egui frontend is a separate crate, so the UI can be swapped without touching the
 
 ## Downloads
 
-**New to MIXEL Design?** Download it from the [MIXEL Design page on getartcraft.com](https://github.com/jangopeopleV2/mixel-design). That's the easiest way to install it.
+**New to MIXEL Design?** Download it from the [MIXEL Design project page](https://github.com/jangopeopleV2/mixel-design). That's the easiest way to install it.
 
 **Want a specific build or format?** On GitHub, the [latest release](https://github.com/storytold/designcraft/releases/latest) has every build listed below, and [all releases](https://github.com/storytold/designcraft/releases) has earlier versions and their notes. `<ver>` in the file names is the version number, and `SHA256SUMS.txt` lists a checksum for every file.
 
@@ -237,45 +228,9 @@ RISC-V (riscv64): `designcraft-<ver>-linux-riscv64.tar.gz` only, cross-compiled;
 |---|---|---|
 | Static site | `designcraft-web-<ver>.zip` | Runs in a modern browser; host it on any static server |
 
-## The Crafting Apps
+## MIXEL Creative Apps
 
-MIXEL Design is one of the **Crafting Apps**: free, open-source creative tools from the
-[ArtCraft](https://getartcraft.com/) team, each written from scratch in Rust and each able to
-stand on its own.
-
-| | App | What it's for | Code | Learn more |
-|:-:|---|---|---|---|
-| <img src="https://raw.githubusercontent.com/storytold/photocraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.photo.png" alt="" width="32" height="32"> | **MIXEL Photo** | Image editing: layers, masks, type and real PSD files | [GitHub](https://github.com/storytold/photocraft) | [Website](https://getartcraft.com/apps/photocraft) |
-| <img src="https://raw.githubusercontent.com/storytold/vectorcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.vector.png" alt="" width="32" height="32"> | **MIXEL Vector** | Vector illustration | [GitHub](https://github.com/storytold/vectorcraft) | [Website](https://getartcraft.com/apps/vectorcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/filmcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.film.png" alt="" width="32" height="32"> | **MIXEL Film** | Video editing, color and sound | [GitHub](https://github.com/storytold/filmcraft) | [Website](https://getartcraft.com/apps/filmcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/lightcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.light.png" alt="" width="32" height="32"> | **MIXEL Light** | Photo library and raw development | [GitHub](https://github.com/storytold/lightcraft) | [Website](https://getartcraft.com/apps/lightcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/pdfcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.print.png" alt="" width="32" height="32"> | **MIXEL Print** | Reading, organizing and protecting PDFs | [GitHub](https://github.com/storytold/pdfcraft) | [Website](https://getartcraft.com/apps/pdfcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/effectcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.effects.png" alt="" width="32" height="32"> | **MIXEL Effects** | Motion graphics and visual effects | [GitHub](https://github.com/storytold/effectcraft) | [Website](https://getartcraft.com/apps/effectcraft) |
-| <img src="https://raw.githubusercontent.com/storytold/designcraft/main/assets/app-icon/hicolor/64x64/apps/ch.mixel.design.png" alt="" width="32" height="32"> | **MIXEL Design** | **Page layout and publishing · you are here** | [GitHub](https://github.com/storytold/designcraft) | [Website](https://github.com/jangopeopleV2/mixel-design) |
-
-And [**ArtCraft**](https://getartcraft.com/) itself, our AI image and video studio for artists who want real control.
-
-<br>
-
-<p align="center">
-  <a href="https://discord.gg/artcraft"><img alt="Join the ArtCraft community on Discord" src="https://img.shields.io/badge/Join%20us%20on%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" height="40"></a>
-</p>
-
-<h3 align="center">Come make things with us</h3>
-
-<p align="center">
-  Our Discord is where artists of every kind hang out: people who paint, shoot, draw, cut film,
-  set type, and people still figuring out what they like to make. Share what you're working on,
-  ask for help, tell us what's broken, or tell us what you wish these tools could do.
-  Whatever your medium and however long you've been at it, you're welcome here.
-</p>
-
-<p align="center">
-  <a href="https://discord.gg/artcraft"><b>discord.gg/artcraft</b></a> ·
-  <a href="https://getartcraft.com/">getartcraft.com</a> ·
-  <a href="https://getartcraft.com/apps">The Crafting Apps</a> ·
-  <a href="https://github.com/jangopeopleV2/mixel-design">MIXEL Design</a>
-</p>
+Explore [MIXEL Creative Apps](https://www.mixel.ch).
 
 ## License and credits
 
@@ -292,9 +247,3 @@ Font License; all UI icons are drawn in code and are original.
 The upstream ArtCraft name, wordmark and logos in [`docs/brand/`](docs/brand/) are trademarks of the ArtCraft Team under [`docs/brand/LICENSE-brand.txt`](docs/brand/LICENSE-brand.txt). They are retained as upstream source provenance, excluded from the MIXEL application, and never used as MIXEL branding. This fork identifies its ArtCraft origins in plain text and uses an original MIXEL monogram.
 
 <sub>Adobe, Photoshop, Illustrator, Premiere Pro, Lightroom, Acrobat, After Effects and InDesign are trademarks or registered trademarks of Adobe Inc. in the United States and/or other countries. MIXEL Design is an independent, open-source project and is not affiliated with, sponsored by or endorsed by Adobe Inc.; these names are used only to describe the workflows it is compatible with.</sub>
-
-<br>
-
-<p align="center">
-  <sub>Based on upstream work by the <a href="https://getartcraft.com/">ArtCraft</a> team and community.</sub>
-</p>

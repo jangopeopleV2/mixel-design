@@ -93,3 +93,9 @@ Table panel. `ui.set` with `closePanel` closes the last explicitly opened panel;
 `dockExpanded:false` hides the root dock while floating groups remain visible.
 The icon rail can reopen a collapsed dock through any root panel. Activating a
 floating panel also raises its group. These operations change only UI layout.
+
+## MIXEL resource branding (product-specific)
+
+Source update 2026-10-19: company links use **MIXEL Website** / **MIXEL Creative Apps** and `https://www.mixel.ch`. Existing MIXEL Design project/repository links remain unchanged. Upstream Discord UI, actions and locale keys are removed; no replacement Discord server is claimed. Active resource IDs: `help.website`, `help.appPage`, `help.github`, `help.issues`; `app.links` returns `website`, `appPage`, `github`, `issues`. The legacy `help.app {app}` selector retains its slug validation and opens the same company homepage; no per-slug company route is assumed.
+
+This supplemental product-branding record is outside the Adobe feature comparison; scores and generated parity rows are unchanged. Matching source regressions are proposed, with build/test/native click verification pending application of this patch. Existing privacy, author, licence and third-party credit records remain applicable.

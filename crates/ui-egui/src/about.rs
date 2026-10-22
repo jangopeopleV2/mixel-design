@@ -1,6 +1,6 @@
 //! Help › About MIXEL Design: tabs About · Contributors · Models. About is the splash with the
-//! original MIXEL mark, version, and community links (Discord first and largest), plus the other MIXEL
-//! apps; Contributors and Models are the compiled-in credits (`crate::credits`).
+//! original MIXEL mark, version, website and project links. Contributors and Models are the
+//! compiled-in credits (`crate::credits`).
 
 use designcraft_engine::links;
 use egui::{Color32, Rect, Sense, Stroke, pos2, vec2};
@@ -11,17 +11,14 @@ use crate::theme::{Tokens, semibold};
 
 /// MIXEL monogram colour.
 pub const BRAND: Color32 = Color32::from_rgb(0x21, 0xb6, 0xa8);
-/// Discord's brand colour, used for the "Join our Discord" buttons (colour only; no Discord artwork).
-pub const DISCORD: Color32 = Color32::from_rgb(0x58, 0x65, 0xf2);
-
-/// The other MIXEL apps (app-page slug, name, what it is) — same list as the README.
+/// The six existing MIXEL sibling buttons, each with its established product project URL.
 pub const SIBLINGS: &[(&str, &str, &str)] = &[
-    ("photocraft", "MIXEL Photo", "image editing"),
-    ("vectorcraft", "MIXEL Vector", "vector illustration"),
-    ("filmcraft", "MIXEL Film", "video editing, color and sound"),
-    ("lightcraft", "MIXEL Light", "photo library and raw development"),
-    ("pdfcraft", "MIXEL Print", "reading, organizing and protecting PDFs"),
-    ("effectcraft", "MIXEL Effects", "motion graphics and visual effects"),
+    ("https://github.com/jangopeopleV2/mixel-photo", "MIXEL Photo", "image editing"),
+    ("https://github.com/jangopeopleV2/mixel-vector", "MIXEL Vector", "vector illustration"),
+    ("https://github.com/jangopeopleV2/mixel-film", "MIXEL Film", "video editing, color and sound"),
+    ("https://github.com/jangopeopleV2/mixel-light", "MIXEL Light", "photo library and raw development"),
+    ("https://github.com/jangopeopleV2/mixel-print", "MIXEL Print", "reading, organizing and protecting PDFs"),
+    ("https://github.com/jangopeopleV2/mixel-effects", "MIXEL Effects", "motion graphics and visual effects"),
 ];
 
 /// The About window's tabs, in `UiState::about_tab` order (`help.about {tab}` names them in lowercase).
@@ -37,38 +34,6 @@ pub fn paint_mark(ui: &egui::Ui, rect: Rect, color: Color32) {
     for pair in vertices.windows(2) {
         ui.painter().line_segment([pair[0], pair[1]], stroke);
     }
-}
-
-/// A speech-bubble glyph (drawn in code) for Discord buttons.
-pub fn paint_chat_icon(p: &egui::Painter, c: egui::Pos2, s: f32, color: Color32) {
-    let body = Rect::from_center_size(c - vec2(0.0, s * 0.06), vec2(s, s * 0.72));
-    p.rect_filled(body, s * 0.24, color);
-    let tail = vec![
-        pos2(body.left() + s * 0.22, body.bottom() - 1.0),
-        pos2(body.left() + s * 0.12, body.bottom() + s * 0.24),
-        pos2(body.left() + s * 0.44, body.bottom() - 1.0),
-    ];
-    p.add(egui::Shape::convex_polygon(tail, color, Stroke::NONE));
-    let eye = s * 0.09;
-    let bg = if color.r() as u32 + color.g() as u32 + color.b() as u32 > 380 { DISCORD } else { Color32::WHITE };
-    p.circle_filled(body.center() - vec2(s * 0.18, 0.0), eye, bg);
-    p.circle_filled(body.center() + vec2(s * 0.18, 0.0), eye, bg);
-}
-
-/// The big "Join our Discord" button. Returns true when clicked.
-pub fn discord_button(ui: &mut egui::Ui, label: &str, size: egui::Vec2) -> bool {
-    let (r, resp) = ui.allocate_exact_size(size, Sense::click());
-    let resp = resp.on_hover_text(links::DISCORD).on_hover_cursor(egui::CursorIcon::PointingHand);
-    let fill = if resp.hovered() { Color32::from_rgb(0x47, 0x52, 0xc4) } else { DISCORD };
-    ui.painter().rect_filled(r, size.y / 2.0, fill);
-    let icon = size.y * 0.5;
-    let font = semibold((size.y * 0.42).max(11.0));
-    let galley = crate::rtl::plain(ui.ctx(), label, font, Color32::WHITE);
-    let total = icon + 8.0 + galley.size().x;
-    let x0 = r.center().x - total / 2.0;
-    paint_chat_icon(ui.painter(), pos2(x0 + icon / 2.0, r.center().y), icon, Color32::WHITE);
-    ui.painter().galley(pos2(x0 + icon + 8.0, r.center().y - galley.size().y / 2.0), galley, Color32::WHITE);
-    resp.clicked()
 }
 
 /// A text link that opens `url`. Returns true when clicked.
@@ -135,28 +100,13 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
                     .size(13.0)
                     .color(t.text),
             ));
-            ui.label(crate::rtl::widget(
-                ui,
-                egui::RichText::new(crate::i18n::tr(&app.ui.language, "Based on upstream work by ArtCraft.")).size(12.0).color(t.text_dim),
-            ));
-            ui.add_space(16.0);
-            if discord_button(ui, "Join the ArtCraft Discord", vec2(300.0, 40.0)) {
-                open = Some("discord");
-            }
-            ui.add_space(4.0);
-            ui.label(crate::rtl::widget(
-                ui,
-                egui::RichText::new(crate::i18n::tr(&app.ui.language, "discord.gg/artcraft — help, feedback and show-and-tell"))
-                    .size(11.0)
-                    .color(t.text_dim),
-            ));
             ui.add_space(14.0);
             ui.horizontal(|ui| {
                 // Centre the row of links.
                 let w = 330.0;
                 ui.add_space(((ui.available_width() - w) / 2.0).max(0.0));
                 for (text, key) in
-                    [("MIXEL Design page", "appPage"), ("GitHub", "github"), ("getartcraft.com", "website"), ("Report an issue", "issues")]
+                    [("MIXEL Design page", "appPage"), ("GitHub", "github"), ("MIXEL Website", "website"), ("Report an issue", "issues")]
                 {
                     if link(ui, text, links::get(key).unwrap_or_default(), t.accent) {
                         open = Some(key);
@@ -169,7 +119,7 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
             ui.add_space(6.0);
             ui.label(crate::rtl::widget(
                 ui,
-                egui::RichText::new(crate::i18n::tr(&app.ui.language, "More MIXEL apps")).font(semibold(12.0)).color(t.text_strong),
+                egui::RichText::new(crate::i18n::tr(&app.ui.language, "MIXEL Creative Apps")).font(semibold(12.0)).color(t.text_strong),
             ));
             ui.add_space(4.0);
             ui.horizontal(|ui| {
@@ -180,12 +130,11 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
                     .sum::<f32>()
                     - ui.spacing().item_spacing.x;
                 ui.add_space(((ui.available_width() - w) / 2.0).max(0.0));
-                for (slug, name, what) in SIBLINGS {
-                    let url = format!("{}/apps/{slug}", links::WEBSITE);
+                for (url, name, what) in SIBLINGS {
                     let b =
                         ui.add(egui::Button::new(egui::RichText::new(*name).size(12.0)).corner_radius(10.0)).on_hover_text(format!("{what} — {url}"));
                     if b.clicked() {
-                        app.ui.pending_urls.push(url);
+                        app.ui.pending_urls.push((*url).to_string());
                     }
                 }
             });

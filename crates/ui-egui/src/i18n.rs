@@ -744,8 +744,8 @@ const TABLE: &[(&str, [&str; 5])] = &[
         "Apply Parent to Pages…",
         ["Apply Parent to Pages…", "Apply Parent to Pages…", "Apply Parent to Pages…", "Apply Parent to Pages…", "将主页应用于页面…"],
     ),
-    ("ArtCraft App Page…", ["ArtCraft App Page…", "ArtCraft App Page…", "ArtCraft App Page…", "ArtCraft App Page…", "ArtCraft 应用页面…"]),
-    ("ArtCraft Website…", ["ArtCraft Website…", "ArtCraft Website…", "ArtCraft Website…", "ArtCraft Website…", "ArtCraft 网站…"]),
+    ("MIXEL Creative Apps…", ["MIXEL Creative Apps…", "MIXEL Creative Apps…", "MIXEL Creative Apps…", "MIXEL Creative Apps…", "MIXEL 创意应用…"]),
+    ("MIXEL Website…", ["MIXEL Website…", "MIXEL Website…", "MIXEL Website…", "MIXEL Website…", "MIXEL 网站…"]),
     ("Attributes", ["Attributes", "Attributes", "Attributes", "Attributes", "属性"]),
     ("Bevel and Emboss", ["Bevel and Emboss", "Bevel and Emboss", "Bevel and Emboss", "Bevel and Emboss", "斜面和浮雕"]),
     ("Buttons", ["Buttons", "Buttons", "Buttons", "Buttons", "按钮"]),
@@ -1024,16 +1024,6 @@ const TABLE: &[(&str, [&str; 5])] = &[
     ("Insert Variable", ["Insert Variable", "Insert Variable", "Insert Variable", "Insert Variable", "插入变量"]),
     ("Inspect Document", ["Inspect Document", "Inspect Document", "Inspect Document", "Inspect Document", "检查文档"]),
     ("Interface Color Theme", ["Interface Color Theme", "Interface Color Theme", "Interface Color Theme", "Interface Color Theme", "界面颜色主题"]),
-    (
-        "Join the ArtCraft Discord…",
-        [
-            "Join the ArtCraft Discord…",
-            "Join the ArtCraft Discord…",
-            "Join the ArtCraft Discord…",
-            "Join the ArtCraft Discord…",
-            "加入 ArtCraft Discord…",
-        ],
-    ),
     ("Last Object Below", ["Last Object Below", "Last Object Below", "Last Object Below", "Last Object Below", "下方最后一个对象"]),
     ("Library Contents", ["Library Contents", "Library Contents", "Library Contents", "Library Contents", "库内容"]),
     ("Library Items", ["Library Items", "Library Items", "Library Items", "Library Items", "库项目"]),
@@ -1560,16 +1550,7 @@ const TABLE: &[(&str, [&str; 5])] = &[
     ("Hyphens and Dashes", ["Hyphens and Dashes", "Hyphens and Dashes", "Hyphens and Dashes", "Hyphens and Dashes", "连字符和破折号"]),
     ("Interactive", ["Interactive", "Interactive", "Interactive", "Interactive", "交互式"]),
     ("Invert", ["Invert", "Invert", "Invert", "Invert", "反相"]),
-    (
-        "Join the ArtCraft community",
-        [
-            "Join the ArtCraft community",
-            "Join the ArtCraft community",
-            "Join the ArtCraft community",
-            "Join the ArtCraft community",
-            "加入 ArtCraft 社区",
-        ],
-    ),
+    ("MIXEL Creative Apps", ["MIXEL Creative Apps", "MIXEL Creative Apps", "MIXEL Creative Apps", "MIXEL Creative Apps", "MIXEL 创意应用"]),
     ("Keyboard Increments", ["Keyboard Increments", "Keyboard Increments", "Keyboard Increments", "Keyboard Increments", "键盘增量"]),
     ("Liquid guides", ["Liquid guides", "Liquid guides", "Liquid guides", "Liquid guides", "自适应参考线"]),
     ("Markers", ["Markers", "Markers", "Markers", "Markers", "标记"]),
@@ -1692,16 +1673,6 @@ const TABLE: &[(&str, [&str; 5])] = &[
         ],
     ),
     ("Page · PPI", ["Page · PPI", "Page · PPI", "Page · PPI", "Page · PPI", "页面 · PPI"]),
-    (
-        "Based on upstream work by ArtCraft.",
-        [
-            "Basiert auf der Arbeit am ursprünglichen Projekt von ArtCraft.",
-            "Basé sur le travail du projet d’origine d’ArtCraft.",
-            "Basado en el trabajo del proyecto original de ArtCraft.",
-            "ArtCraft による上流プロジェクトの成果に基づいています。",
-            "基于 ArtCraft 的上游项目成果。",
-        ],
-    ),
     ("Pasteboard Options", ["Pasteboard Options", "Pasteboard Options", "Pasteboard Options", "Pasteboard Options", "粘贴板选项"]),
     ("Paths", ["Paths", "Paths", "Paths", "Paths", "路径"]),
     (
@@ -1874,16 +1845,6 @@ const TABLE: &[(&str, [&str; 5])] = &[
             "[None] — choose a colour on the ramp.",
             "[None] — choose a colour on the ramp.",
             "[无] — 在色带上选择一种颜色。",
-        ],
-    ),
-    (
-        "discord.gg/artcraft — help, feedback and show-and-tell",
-        [
-            "discord.gg/artcraft — help, feedback and show-and-tell",
-            "discord.gg/artcraft — help, feedback and show-and-tell",
-            "discord.gg/artcraft — help, feedback and show-and-tell",
-            "discord.gg/artcraft — help, feedback and show-and-tell",
-            "discord.gg/artcraft — 帮助、反馈和展示",
         ],
     ),
     (
@@ -2611,7 +2572,6 @@ const TABLE: &[(&str, [&str; 5])] = &[
     ("H&J Violations", ["H&J Violations", "H&J Violations", "H&J Violations", "H&J Violations", "断字与对齐违规"]),
     ("Include Bleed", ["Include Bleed", "Include Bleed", "Include Bleed", "Include Bleed", "包含出血"]),
     ("Include Stroke Weight", ["Include Stroke Weight", "Include Stroke Weight", "Include Stroke Weight", "Include Stroke Weight", "包含描边粗细"]),
-    ("Join our Discord", ["Join our Discord", "Join our Discord", "Join our Discord", "Join our Discord", "加入我们的 Discord 社区"]),
     ("Keep Violations", ["Keep Violations", "Keep Violations", "Keep Violations", "Keep Violations", "保持选项违规"]),
     (
         "Overprint [Black] Swatch at 100%",

@@ -2,7 +2,7 @@
 
 > **Phase 1 record status — 2026-10-14:** minor; Mac App Store implementation recorded, earlier local verification recorded before this update; later verification and delivery evidence tracked in suite STATUS.md. Scores, estimates and the earlier assessment dates below are unchanged.
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-12 · **Change:** minor (cancelable macOS Dock Quit) · **Target:** Adobe InDesign 2026 (21.6.0.57, macOS)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** minor (MIXEL native Privacy Policy menu source recorded; dedicated native click verification pending; scores unchanged; cancelable macOS Dock Quit) · **Target:** Adobe InDesign 2026 (21.6.0.57, macOS)
 
 The authoritative assessment of how close DesignCraft is to Adobe InDesign. [ROADMAP.md](../ROADMAP.md)
 summarizes it; [gaps.md](gaps.md) lists every known shortfall one at a time; the feature-by-feature
@@ -63,7 +63,7 @@ they receive, setting type exactly, and basic editing that never fails.
 | Features (depth of each area) | 25% | 55% | 250–400 | 275 catalogue rows exist; many lack options (e.g. Books is 258 lines of engine code, Liquid Layout 329); see the area table | this file |
 | Typography and composition fidelity | 15% | 45% | 120–200 | Knuth–Plass composer, keeps, grids, CJK, Arabic all exist; no comparison with InDesign's line breaks; optical kerning falls back to metrics (#181); overset rule differs (#180); hyphenation patterns for English and Spanish only | [typography-parity.md](typography-parity.md) |
 | File formats | 20% | 40% | 150–250 (+20–60 for INDD integration) | INDD cannot be opened (#21); IDML both ways and verified in InDesign 2026, but real-file bugs open (#193, #338, #339, #340); PDF export strong; PDF/X-4 only | [file-format-parity.md](file-format-parity.md) |
-| UI/UX fidelity | 15% | 45% | 120–180 | Measured InDesign 2026 look; but users report object copy/paste (#351, #348, #185, #164), right-click menus (#238, #187, #160), out-port threading (#352, #194, #165), canvas IME (#322) failing | [ui-parity.md](ui-parity.md) |
+| UI/UX fidelity | 15% | 45% | 120–180 | MIXEL native Privacy Policy source recorded (dedicated click verification pending); measured InDesign 2026 look; but users report object copy/paste (#351, #348, #185, #164), right-click menus (#238, #187, #160), out-port threading (#352, #194, #165), canvas IME (#322) failing | [ui-parity.md](ui-parity.md) |
 | Stability | 10% | 45% | 60–100 | Never-crash rules and last-resort guards; startup failures on some GPUs and machines (#334, #273, #220, #192, #167, #166); no CI runs the tests on pull requests | [gaps.md](gaps.md) |
 | Performance | 5% | 65% | 40–80 | 300k characters compose in ~38 ms warm; typing repaints in < 1 ms (damage regions); no incremental composition; nothing benchmarked against InDesign; no large real documents | [gaps.md](gaps.md) |
 | Localization | 3% | 45% | 120–180 | 9 translations beyond English; Japanese 95%, most others 83–85%, pt-BR 61%; Hindi, Indonesian, Korean, Vietnamese none | [localization-parity.md](localization-parity.md) |
@@ -272,6 +272,7 @@ It is evidence of breadth: each item exists. It is not a claim of InDesign-level
 - Rendering: vello_cpu (SIMD, multithreaded) — pages, items, images with mip levels, gradients, composed text.
 - UI (egui): application bar + menus, Control panel (object and text modes), Tools panel with flyouts, document tabs, rulers, pasteboard, guides (margins, columns, bleed, baseline grid), frame edges, selection handles, text ports and threads, Properties / Pages / Layers dock, Swatches, Styles, Character, Paragraph, Stroke, Text Wrap panels, New Document and Preferences dialogs, Quick Apply (⌘Return), 4 brightness themes.
 - Pen tool, Direct Selection anchor/handle editing, rotate from corners, Rotate/Scale/Shear tools, Eyedropper, snapping & smart guides, Align/Distribute, Find/Change (text + GREP), Story Editor, Paragraph Style Options, Effects panel, hidden characters, native macOS menu bar, measured InDesign 2026 look (Medium Dark): Properties sections per selection state, 21 pt spinner fields with arithmetic, Contextual Task Bar, inverse (black) text selection, Pages panel with drag-and-drop reorder / parent apply, Layers panel with per-object rows.
+- MIXEL product privacy: the macOS application-menu Privacy Policy item queues `https://www.mixel.ch/legal/craft/privacy/` on selection (`apps/designcraft/src/native_menu.rs`). Dedicated native click/browser-launch verification remains pending; no parity/readiness score changes.
 - Tools: Selection (click, marquee, move, Alt-duplicate, resize handles), Direct Selection, Type (draw frame, click caret, select, type), Rectangle/Ellipse/Polygon (+ frame variants), Line, Hand, Zoom.
 - PDF export (krilla): real selectable text with embedded font subsets, DeviceCMYK/RGB + spot Separations, bleed boxes, crop/bleed marks + page info, pages or spreads, PDF/A-2b (PDF/X-4 output intent pending) — `file.exportPdf`, File › Export PDF…, `designcraft-cli run --export out.pdf`. File › Export PDF… now opens an "Export PDF" options dialog (General / Compression / Marks and Bleeds / Advanced) and remembers the last-used settings across exports and sessions.
 - IDML interchange (`designcraft-idml`): export and import of swatches, styles, fonts, preferences, parent spreads, spreads/pages, frames, groups, images (embedded or linked), formatted threaded stories — opens in InDesign 2026 and round-trips InDesign-exported files (`file.exportIdml`, `file.openIdml`, File → Export IDML…, CLI `--in x.idml` / `--export x.idml`).
@@ -447,9 +448,16 @@ Task notes that headed ROADMAP.md:
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | minor | MIXEL native Privacy Policy menu source recorded; dedicated native click verification pending; scores unchanged |
 | 2026-10-14 | minor | Mac App Store sandbox and packaging implementation recorded; earlier local verification distinguished from the source-bound refresh pending at this entry; later verification and delivery evidence tracked in suite STATUS.md; parity scores, estimates and existing gaps unchanged |
 | 2026-10-10 | minor | Full number 42% → 47%: method aligned with the standard (plain weighted sum, the ×0.9 discount dropped), no new evidence; readiness table with hours for full, mainstream and essentials; beta distance 33 → 28 points |
 | 2026-10-10 | minor | Added mainstream practitioner (~42%) and essentials user (~54%) numbers with written weights and discounts and a user-evidence count; full number (42%) now written as 47.2% × 0.9, value unchanged |
 | 2026-10-10 | minor | Stage alpha → pre-alpha under the core-workflow gate (manual threading missing); Type & text frames row updated |
 | 2026-10-10 | major | Created from ROADMAP.md's "How far from full parity" (2026-10-04) and "Working today"; full re-measure against InDesign 2026 21.6: menu coverage measured against InDesign 21.6's menu dump (69%) and the documented tree (75%), breadth set at ~80%, ready-for-real-work re-estimated 83% → 42% on user-reported evidence and the INDD gap; hours recalibrated from git history |
 | 2026-10-04 | major | (in ROADMAP.md) breadth 99% weighted over 275 rows, ~83% including depth, ~170 h remaining |
+
+## MIXEL resource branding (product-specific)
+
+Source update 2026-10-19: company links use **MIXEL Website** / **MIXEL Creative Apps** and `https://www.mixel.ch`. Existing MIXEL Design project/repository links remain unchanged. Upstream Discord UI, actions and locale keys are removed; no replacement Discord server is claimed. Active resource IDs: `help.website`, `help.appPage`, `help.github`, `help.issues`; `app.links` returns `website`, `appPage`, `github`, `issues`. The legacy `help.app {app}` selector retains its slug validation and opens the same company homepage; no per-slug company route is assumed.
+
+This supplemental product-branding record is outside the Adobe feature comparison; scores and generated parity rows are unchanged. Matching source regressions are proposed, with build/test/native click verification pending application of this patch. Existing privacy, author, licence and third-party credit records remain applicable.
