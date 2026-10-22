@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
+exclude = ["mixel/vendor/accesskit_atspi_common", "mixel/vendor/accesskit_unix", "mixel/vendor/atspi", "mixel/vendor/atspi-common", "mixel/vendor/atspi-proxies", "mixel/vendor/zbus-lockstep", "mixel/vendor/zbus-lockstep-macros"]
 default-members = ["crates/*", "apps/designcraft", "apps/designcraft-cli", "xtask"]
 
 [workspace.package]
@@ -101,3 +102,12 @@ debug = 0
 # Opt-in cancelable macOS termination on the pinned winit 0.30 line.
 [patch.crates-io]
 winit = { git = "https://github.com/skylartaylor/winit.git", rev = "3d51077fd1a966f84df9ef287839dc84fd5b4ca7" }
+
+# Maintained zbus 6 protocol/accessibility dependency ports; source provenance is retained alongside each full package.
+accesskit_atspi_common = { path = "mixel/vendor/accesskit_atspi_common" }
+accesskit_unix = { path = "mixel/vendor/accesskit_unix" }
+atspi = { path = "mixel/vendor/atspi" }
+atspi-common = { path = "mixel/vendor/atspi-common" }
+atspi-proxies = { path = "mixel/vendor/atspi-proxies" }
+zbus-lockstep = { path = "mixel/vendor/zbus-lockstep" }
+zbus-lockstep-macros = { path = "mixel/vendor/zbus-lockstep-macros" }

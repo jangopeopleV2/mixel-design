@@ -1,6 +1,6 @@
 # UI and interaction parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** minor (stage re-normalized to pre-alpha by the core-workflow gate; earlier today: major, first version) · **Target:** Adobe InDesign 2026 (21.6, Medium Dark, macOS)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** minor (MIXEL native Privacy Policy menu source recorded; dedicated native click verification pending; scores unchanged; stage re-normalized to pre-alpha by the core-workflow gate; earlier today: major, first version) · **Target:** Adobe InDesign 2026 (21.6, Medium Dark, macOS)
 
 Tools, handles, snapping, nudging, modifiers, shortcuts, panels, menus, context menus and feel,
 against InDesign 2026. The look was measured from the running app
@@ -58,6 +58,10 @@ Counted 2026-10-10: 27 rows, 11 ✓, 14 ~, 2 ✗ → **67% presence**, scoring �
 for real work is lower, ~45%, because threading is missing and three of the ~ rows (copy/paste,
 context menus, typing at a caret) are things a layout artist does every minute, and their failures stop work.
 
+## MIXEL product privacy menu
+
+The macOS application menu includes **Privacy Policy** (`apps/designcraft/src/native_menu.rs`). Selecting `mixel.host.privacy-policy` queues `https://www.mixel.ch/legal/craft/privacy/` through the existing pending-URL path. The source implementation is present; dedicated native click/browser-launch verification is pending. This is a MIXEL product action and does not change the InDesign interaction-fidelity assessment.
+
 ## Remaining effort
 
 | Work | Opus 5.5 h |
@@ -73,5 +77,12 @@ context menus, typing at a caret) are things a layout artist does every minute, 
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | minor | MIXEL native Privacy Policy menu source recorded; dedicated native click verification pending; scores unchanged |
 | 2026-10-10 | minor | Threading row corrected to ✗ after checking the code (no out-port interaction, no thread command) |
 | 2026-10-10 | major | Created: measured menu coverage, 27-row interaction checklist from the code and issues |
+
+## MIXEL resource branding (product-specific)
+
+Source update 2026-10-19: company links use **MIXEL Website** / **MIXEL Creative Apps** and `https://www.mixel.ch`. Existing MIXEL Design project/repository links remain unchanged. Upstream Discord UI, actions and locale keys are removed; no replacement Discord server is claimed. Active resource IDs: `help.website`, `help.appPage`, `help.github`, `help.issues`; `app.links` returns `website`, `appPage`, `github`, `issues`. The legacy `help.app {app}` selector retains its slug validation and opens the same company homepage; no per-slug company route is assumed.
+
+This supplemental product-branding record is outside the Adobe feature comparison; scores and generated parity rows are unchanged. Matching source regressions are proposed, with build/test/native click verification pending application of this patch. Existing privacy, author, licence and third-party credit records remain applicable.

@@ -15,6 +15,16 @@ grain. A measured match of InDesign 21.6's own menu dump against DesignCraft's l
 of in-scope menu items (75% against the documented menu tree) (see [target-app-parity.md](target-app-parity.md)), so read 99% as an upper
 bound.
 
+## MIXEL product-specific application action
+
+> **Record updated:** 2026-10-18; source implementation only, dedicated native click/browser-launch verification pending.
+
+The macOS application menu contains **Privacy Policy**. The item `mixel.host.privacy-policy` queues `https://www.mixel.ch/legal/craft/privacy/` when selected (`apps/designcraft/src/native_menu.rs`). This product-specific policy link is recorded separately from the InDesign feature catalogue below; the generated 275-row parity summary and its scores are unchanged.
+
+## MIXEL product-specific resource links
+
+Source record 2026-10-19: Help, About and the start screen use MIXEL Website / MIXEL Creative Apps at `https://www.mixel.ch`; product repository/issue links retain their existing MIXEL destinations. The upstream Discord controls, `help.discord`, native `dc-discord` item and obsolete locale keys are removed. The legacy `help.app {app}` keeps its input validation and opens the company homepage. This branding-only supplemental record is outside the generated InDesign catalogue. Matching source regressions are proposed; actual build/test/native click verification is pending. Existing Privacy Policy remains unchanged.
+
 <!-- SUMMARY -->
 **Weighted breadth parity: 99%** over 275 features.
 

@@ -28,7 +28,7 @@
     <Property Id="ARPPRODUCTICON" Value="DesigncraftIcon.ico" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/jangopeopleV2/mixel-design" />
     <Property Id="ARPURLUPDATEINFO" Value="https://github.com/jangopeopleV2/mixel-design" />
-    <Property Id="ARPHELPLINK" Value="https://discord.gg/artcraft" />
+    <Property Id="ARPHELPLINK" Value="https://www.mixel.ch" />
 
     <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="INSTALLFOLDER" Name="MIXEL Design" />

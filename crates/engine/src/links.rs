@@ -1,14 +1,12 @@
-//! ArtCraft community and project links (Help menu, About, start screen, CLI, MCP).
+//! MIXEL website and project links (Help menu, About, start screen, CLI, MCP).
 
 use serde_json::{Value, json};
 
-/// The app's slug on getartcraft.com and GitHub.
+/// The app's legacy internal slug.
 pub const APP: &str = "designcraft";
-/// The ArtCraft community Discord.
-pub const DISCORD: &str = "https://discord.gg/artcraft";
-/// The ArtCraft website.
-pub const WEBSITE: &str = "https://getartcraft.com";
-/// MIXEL Design's page on the ArtCraft website.
+/// The MIXEL company website.
+pub const WEBSITE: &str = "https://www.mixel.ch";
+/// MIXEL Design's project page.
 pub const APP_PAGE: &str = "https://github.com/jangopeopleV2/mixel-design";
 /// MIXEL Design's source repository.
 pub const GITHUB: &str = "https://github.com/jangopeopleV2/mixel-design";
@@ -18,7 +16,6 @@ pub const ISSUES: &str = "https://github.com/jangopeopleV2/mixel-design/issues";
 /// All links as JSON (the `app.links` command).
 pub fn all() -> Value {
     json!({
-        "discord": DISCORD,
         "website": WEBSITE,
         "appPage": APP_PAGE,
         "github": GITHUB,
@@ -26,10 +23,9 @@ pub fn all() -> Value {
     })
 }
 
-/// A link by key (`discord`, `website`, `appPage`, `github`, `issues`).
+/// A link by key (`website`, `appPage`, `github`, `issues`).
 pub fn get(key: &str) -> Option<&'static str> {
     Some(match key {
-        "discord" => DISCORD,
         "website" => WEBSITE,
         "appPage" => APP_PAGE,
         "github" => GITHUB,
@@ -47,7 +43,10 @@ mod tests {
         assert!(APP_PAGE.starts_with("https://github.com/jangopeopleV2/mixel-design"));
         assert!(GITHUB.starts_with("https://github.com/jangopeopleV2/mixel-design"));
         assert!(ISSUES.starts_with(GITHUB));
-        for k in ["discord", "website", "appPage", "github", "issues"] {
+        assert_eq!(WEBSITE, "https://www.mixel.ch");
+        assert!(get("discord").is_none());
+        assert!(all().get("discord").is_none());
+        for k in ["website", "appPage", "github", "issues"] {
             assert!(get(k).is_some_and(|u| u.starts_with("https://")), "{k}");
             assert_eq!(all()[k], get(k).unwrap());
         }

@@ -4,12 +4,16 @@
 
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::mpsc::{Receiver, channel};
 
 use designcraft_ui_egui::DesignApp;
 use designcraft_ui_egui::menus::{self, Item};
 use muda::accelerator::Accelerator;
 use muda::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use serde_json::Value;
+
+const PRIVACY_POLICY: &str = "mixel.host.privacy-policy";
+const PRIVACY_POLICY_URL: &str = "https://www.mixel.ch/legal/craft/privacy/";
 
 enum Handle {
     Plain(MenuItem),
@@ -20,6 +24,7 @@ pub struct NativeMenu {
     _menu: Menu,
     items: HashMap<String, (String, Value, Handle)>,
     last_refresh: f64,
+    events: Option<Receiver<MenuEvent>>,
 }
 
 /// Accelerator for "Cmd+Shift+]" (modifier-less shortcuts stay in the app so typing works).
@@ -39,12 +44,12 @@ impl NativeMenu {
         let app_menu = Submenu::new("MIXEL Design", true);
         // Our own About splash (with the community links) instead of the stock panel.
         let about = MenuItem::with_id("dc-about", "About MIXEL Design", true, None);
-        let discord = MenuItem::with_id("dc-discord", "Join the ArtCraft Discord…", true, None);
+        let privacy = MenuItem::with_id(PRIVACY_POLICY, "Privacy Policy", true, None);
         // Not the predefined Quit: it terminates the app at once, past the unsaved-changes prompt.
         let quit = MenuItem::with_id("dc-quit", designcraft_ui_egui::i18n::tr(&app.ui.language, "Quit MIXEL Design"), true, accel("Cmd+Q"));
         let _ = app_menu.append_items(&[
             &about,
-            &discord,
+            &privacy,
             &PredefinedMenuItem::separator(),
             &PredefinedMenuItem::services(None),
             &PredefinedMenuItem::separator(),
@@ -55,7 +60,6 @@ impl NativeMenu {
             &quit,
         ]);
         items.insert("dc-about".into(), ("help.about".into(), serde_json::Value::Null, Handle::Plain(about)));
-        items.insert("dc-discord".into(), ("help.discord".into(), serde_json::Value::Null, Handle::Plain(discord)));
         items.insert("dc-quit".into(), ("app.quit".into(), serde_json::Value::Null, Handle::Plain(quit)));
         let _ = menu.append(&app_menu);
         for (title, entries) in menus::menu_tree() {
@@ -72,11 +76,32 @@ impl NativeMenu {
                 (p.is_null() && accel(sc).is_some()).then(|| id.clone())
             })
             .collect();
-        Self { _menu: menu, items, last_refresh: 0.0 }
+        Self { _menu: menu, items, last_refresh: 0.0, events: None }
     }
 
     pub fn poll(&mut self, app: &mut DesignApp, ctx: &egui::Context) {
-        while let Ok(ev) = MenuEvent::receiver().try_recv() {
+        if self.events.is_none() {
+            let (tx, rx) = channel();
+            let repaint = ctx.clone();
+            // Use the existing default receiver, including already queued events.
+            // Like the Film host, receive off-thread and wake the egui event loop;
+            // do not depend on installing a callback after muda initialized it.
+            std::thread::spawn(move || {
+                while let Ok(event) = MenuEvent::receiver().recv() {
+                    if tx.send(event).is_err() {
+                        break;
+                    }
+                    repaint.request_repaint();
+                }
+            });
+            self.events = Some(rx);
+        }
+        while let Some(Ok(ev)) = self.events.as_ref().map(|events| events.try_recv()) {
+            if ev.id.as_ref() == PRIVACY_POLICY {
+                app.ui.pending_urls.push(PRIVACY_POLICY_URL.to_owned());
+                ctx.request_repaint();
+                continue;
+            }
             if let Some((cmd, params, _)) = self.items.get(ev.id.as_ref()) {
                 menus::activate_native(app, ctx, &cmd.clone(), &params.clone());
             }

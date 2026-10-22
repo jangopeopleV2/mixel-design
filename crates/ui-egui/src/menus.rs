@@ -159,12 +159,11 @@ pub const UI_COMMANDS: &[(&str, &str, Option<&str>, &str)] = &[
         "{on?: bool, at?: [x, y] (points from the canvas's top-left)} — the Contextual Task Bar stays where it is (or at `at`) instead of following the selection; with neither, toggles",
     ),
     ("window.taskBarReset", "Reset Bar Position", None, "{} — the Contextual Task Bar follows the selection again, under it"),
-    ("help.discord", "Join the ArtCraft Discord…", None, "{} — opens https://discord.gg/artcraft in the browser"),
     ("help.appPage", "MIXEL Design Website…", None, "{} — opens https://github.com/jangopeopleV2/mixel-design"),
     ("help.github", "MIXEL Design on GitHub…", None, "{} — opens https://github.com/jangopeopleV2/mixel-design"),
     ("help.issues", "Report an Issue…", None, "{} — opens the GitHub issue tracker"),
-    ("help.website", "ArtCraft Website…", None, "{} — opens https://getartcraft.com"),
-    ("help.app", "ArtCraft App Page…", None, "{app} — opens https://getartcraft.com/apps/{app} (e.g. photocraft)"),
+    ("help.website", "MIXEL Website…", None, "{} — opens https://www.mixel.ch"),
+    ("help.app", "MIXEL Creative Apps…", None, "{app} — accepts a legacy app slug and opens https://www.mixel.ch"),
     (
         "help.about",
         "About MIXEL Design",
@@ -701,21 +700,7 @@ pub const MENUS: &[(&str, &[&str])] = &[
             "ui:window.brightness",
         ],
     ),
-    (
-        "Help",
-        &[
-            "ui:help.discord",
-            "-",
-            "ui:help.appPage",
-            "ui:help.github",
-            "ui:help.issues",
-            "ui:help.website",
-            "-",
-            "cmd:file.newSample",
-            "-",
-            "ui:help.about",
-        ],
-    ),
+    ("Help", &["ui:help.appPage", "ui:help.github", "ui:help.issues", "ui:help.website", "-", "cmd:file.newSample", "-", "ui:help.about"]),
 ];
 
 pub fn ui_label(id: &str) -> Option<(&'static str, Option<&'static str>)> {
@@ -1356,7 +1341,7 @@ pub fn run_ui(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value, 
         }
         "help.app" => match p.get("app").and_then(Value::as_str) {
             Some(slug) if !slug.is_empty() && slug.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') => {
-                let url = format!("{}/apps/{slug}", designcraft_engine::links::WEBSITE);
+                let url = designcraft_engine::links::WEBSITE.to_string();
                 app.ui.pending_urls.push(url.clone());
                 Ok(json!({"url": url}))
             }
@@ -2282,6 +2267,26 @@ mod tests {
                 Item::Sep => {}
             }
         }
+    }
+
+    #[test]
+    fn mixel_resource_links_exclude_unowned_community_actions() {
+        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        assert!(ui_label("help.discord").is_none());
+        assert!(run_ui(&mut app, "help.discord", &json!({})).is_none());
+        assert!(app.ui.pending_urls.is_empty());
+        let result = run_ui(&mut app, "help.website", &json!({})).unwrap().unwrap();
+        assert_eq!(result["url"], "https://www.mixel.ch");
+        let result = run_ui(&mut app, "help.app", &json!({"app": "photocraft"})).unwrap().unwrap();
+        assert_eq!(result["url"], "https://www.mixel.ch");
+        assert!(run_ui(&mut app, "help.app", &json!({"app": "../foreign"})).unwrap().is_err());
+        assert_eq!(app.ui.pending_urls, ["https://www.mixel.ch", "https://www.mixel.ch"]);
+        let mut all = Vec::new();
+        for (_, items) in menu_tree() {
+            walk(&items, &mut all);
+        }
+        assert!(!all.iter().any(|(_, id, _)| id == "help.discord"));
+        assert!(all.iter().any(|(_, id, _)| id == "help.website"));
     }
 
     /// Exercise the real dropdown, including clipping and wheel input, on a short viewport.

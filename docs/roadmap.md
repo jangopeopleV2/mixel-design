@@ -2,7 +2,7 @@
 
 > **Phase 1 record status — 2026-10-14:** minor; Mac App Store implementation recorded, earlier local verification recorded before this update; later verification and delivery evidence tracked in suite STATUS.md. Scores, estimates and the earlier assessment dates below are unchanged.
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-11 · **Change:** minor (stage re-normalized to pre-alpha by the core-workflow gate; earlier today: major, milestones re-assessed; beta plan from the full re-measure) · **Target:** Adobe InDesign 2026 (21.6)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** minor (MIXEL native Privacy Policy menu source recorded; dedicated native click verification pending; scores unchanged; stage re-normalized to pre-alpha by the core-workflow gate; earlier today: major, milestones re-assessed; beta plan from the full re-measure) · **Target:** Adobe InDesign 2026 (21.6)
 
 Forward-looking plan. The one-page summary is [ROADMAP.md](../ROADMAP.md); numbers are in
 [target-app-parity.md](target-app-parity.md); the work list is [gaps.md](gaps.md). Hours are
@@ -72,7 +72,7 @@ set exists; depth gaps are in gaps.md.
 | M11 | Layout power features (liquid/alternate layouts, data merge) | present, shallow; Flex Layout (new in InDesign 2026) ✗ |
 | M12 | Interactive & digital (EPUB, HTML, interactive PDF) | present; HTML basic (#314), fixed-layout EPUB as images |
 | M13 | Automation (scripts, batch) | ✅ own command scripts, CLI, MCP; ExtendScript/UXP compatibility ✗ |
-| M14 | 1.0 polish & packaging | packaging ✅ (macOS, Windows x64/ARM64, Linux deb/AppImage/Flatpak, FreeBSD, web); polish not started; 2026-10-14 Mac App Store sandbox/native-sheet/atomic-save and signed-package variant implemented, local verification recorded before this documentation update; source-bound refresh pending at this entry, with later evidence tracked in suite STATUS.md, distributed desktop/TestFlight launches not established |
+| M14 | 1.0 polish & packaging | MIXEL native Privacy Policy source recorded (dedicated native click verification pending); packaging ✅ (macOS, Windows x64/ARM64, Linux deb/AppImage/Flatpak, FreeBSD, web); polish not started; 2026-10-14 Mac App Store sandbox/native-sheet/atomic-save and signed-package variant implemented, local verification recorded before this documentation update; source-bound refresh pending at this entry, with later evidence tracked in suite STATUS.md, distributed desktop/TestFlight launches not established |
 | **A1** | **Alpha** (core-workflow gate) | blocked by manual text threading; see Alpha gate |
 | **B1** | **Beta** (ready ≥ 75%, INDD/IDML reliable) | not started as a milestone; see below |
 
@@ -112,6 +112,7 @@ output intent · EPS place") is done except Books depth and EPS (preview only).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | minor | MIXEL native Privacy Policy menu source recorded; dedicated native click verification pending; scores unchanged |
 | 2026-10-14 | minor | Mac App Store sandbox and packaging implementation recorded; earlier local verification distinguished from the source-bound refresh pending at this entry; later verification and delivery evidence tracked in suite STATUS.md; parity scores, estimates and existing gaps unchanged |
 | 2026-10-10 | trivial | Ready figure 42% → 47% (method aligned with the standard); beta distance 28 points |
 | 2026-10-10 | minor | Alpha gate table added (6 core workflows); gate fails on manual threading, stage pre-alpha; A1 milestone and focus item 0 |
