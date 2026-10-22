@@ -31,11 +31,16 @@
     <Property Id="ARPHELPLINK" Value="https://www.mixel.ch" />
 
     <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="INSTALLFOLDER" Name="MIXEL Design" />
+      <Directory Id="INSTALLFOLDER" Name="MIXEL Design">
+        <Directory Id="LegalDira77854315fcafe53db14" Name="Licenses">
+          <Directory Id="LegalDir586c79a12a8241f97438" Name="epaint_default_fonts-0.36.2" />
+        </Directory>
+      </Directory>
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder" />
 
     <Feature Id="Main" Title="MIXEL Design" Level="1">
+      <ComponentGroupRef Id="LegalNoticesDesign" />
       <ComponentGroupRef Id="DesigncraftFiles" />
     </Feature>
   </Package>
@@ -54,6 +59,26 @@
 
       <Component Id="DesigncraftCli">
         <File Id="DesigncraftCliExe" Source="$(var.BinDir)\designcraft-cli.exe" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="LegalNoticesDesign">
+      <Component Id="LegalComponentcc7783b38182cc450eb3" Directory="LegalDira77854315fcafe53db14">
+        <File Id="LegalFilecc7783b38182cc450eb3" Source="$(var.BinDir)\Licenses\NOTICE" KeyPath="yes" />
+      </Component>
+      <Component Id="LegalComponentc77e847ce0024be9d3c3" Directory="LegalDir586c79a12a8241f97438">
+        <File Id="LegalFilec77e847ce0024be9d3c3" Source="$(var.BinDir)\Licenses\epaint_default_fonts-0.36.2\Hack-Regular.txt" KeyPath="yes" />
+      </Component>
+      <Component Id="LegalComponent902cc6dc0ec6fb28b005" Directory="LegalDir586c79a12a8241f97438">
+        <File Id="LegalFile902cc6dc0ec6fb28b005" Source="$(var.BinDir)\Licenses\epaint_default_fonts-0.36.2\OFL.txt" KeyPath="yes" />
+      </Component>
+      <Component Id="LegalComponent46927afaefcef6927926" Directory="LegalDir586c79a12a8241f97438">
+        <File Id="LegalFile46927afaefcef6927926" Source="$(var.BinDir)\Licenses\epaint_default_fonts-0.36.2\UFL.txt" KeyPath="yes" />
+      </Component>
+      <Component Id="LegalComponent5d0aa4b0e87032dccc73" Directory="LegalDir586c79a12a8241f97438">
+        <File Id="LegalFile5d0aa4b0e87032dccc73" Source="$(var.BinDir)\Licenses\epaint_default_fonts-0.36.2\emoji-icon-font-mit-license.txt" KeyPath="yes" />
       </Component>
     </ComponentGroup>
   </Fragment>
