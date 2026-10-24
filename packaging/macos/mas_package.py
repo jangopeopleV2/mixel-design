@@ -86,6 +86,172 @@ def file_proof(path):
     return {"path": str(path.resolve()), "sha256": hasher.hexdigest(), "bytes": before.st_size}
 
 
+
+# These two concrete private APIs caused App Review 2.5.1 rejection. This is
+# deliberately a narrow regression gate, not a claim to catalogue every Apple API.
+PRIVATE_API_SYMBOLS = (b"CGSSetWindowBackgroundBlurRadius", b"CGSMainConnectionID")
+
+
+def macho_slices(read_at, size, label):
+    """Validate a thin/fat Mach-O container and return every declared thin slice."""
+    thin_magic = {
+        b"\xfe\xed\xfa\xce": ("big", 32),
+        b"\xce\xfa\xed\xfe": ("little", 32),
+        b"\xfe\xed\xfa\xcf": ("big", 64),
+        b"\xcf\xfa\xed\xfe": ("little", 64),
+    }
+    fat_magic = {
+        b"\xca\xfe\xba\xbe": ("big", 32),
+        b"\xbe\xba\xfe\xca": ("little", 32),
+        b"\xca\xfe\xba\xbf": ("big", 64),
+        b"\xbf\xba\xfe\xca": ("little", 64),
+    }
+
+    def take(offset, count):
+        require(0 <= offset <= size and 0 <= count <= size - offset, f"Mach-O range exceeds file: {label}")
+        value = read_at(offset, count)
+        require(len(value) == count, f"Truncated Mach-O file: {label}")
+        return value
+
+    def thin(offset, length):
+        require(length >= 4, f"Truncated Mach-O slice: {label}")
+        magic = take(offset, 4)
+        require(magic in thin_magic, f"Fat member is not a thin Mach-O slice: {label}")
+        order, bits = thin_magic[magic]
+        header_size = 32 if bits == 64 else 28
+        require(length >= header_size, f"Truncated Mach-O header: {label}")
+        header = take(offset, header_size)
+        integer = lambda start: int.from_bytes(header[start:start + 4], order)
+        commands, command_bytes = integer(16), integer(20)
+        require(command_bytes <= length - header_size and commands <= command_bytes // 8 and commands <= 4096,
+                f"Invalid Mach-O load-command bounds: {label}")
+        cursor, end = offset + header_size, offset + header_size + command_bytes
+        for _ in range(commands):
+            require(cursor <= end - 8, f"Truncated Mach-O load command: {label}")
+            command = take(cursor, 8)
+            command_size = int.from_bytes(command[4:8], order)
+            require(command_size >= 8 and command_size % 4 == 0 and command_size <= end - cursor,
+                    f"Invalid Mach-O load-command size: {label}")
+            cursor += command_size
+        require(cursor == end, f"Mach-O load-command sizes disagree: {label}")
+        return {"offset": offset, "bytes": length, "bits": bits,
+                "cpuType": integer(4), "cpuSubtype": integer(8)}
+
+    require(type(size) is int and size >= 0, f"Invalid binary length: {label}")
+    magic = take(0, min(4, size))
+    if magic in thin_magic:
+        return [thin(0, size)]
+    if magic not in fat_magic:
+        return []
+    order, bits = fat_magic[magic]
+    require(size >= 8, f"Truncated fat Mach-O header: {label}")
+    count = int.from_bytes(take(4, 4), order)
+    entry_size = 32 if bits == 64 else 20
+    require(1 <= count <= 64 and count <= (size - 8) // entry_size,
+            f"Invalid fat Mach-O architecture table: {label}")
+    table_end = 8 + count * entry_size
+    result, ranges, architectures = [], [], set()
+    for index in range(count):
+        entry = take(8 + index * entry_size, entry_size)
+        cpu = int.from_bytes(entry[0:4], order)
+        subtype = int.from_bytes(entry[4:8], order)
+        width = 8 if bits == 64 else 4
+        offset = int.from_bytes(entry[8:8 + width], order)
+        length = int.from_bytes(entry[8 + width:8 + 2 * width], order)
+        alignment = int.from_bytes(entry[8 + 2 * width:12 + 2 * width], order)
+        require(alignment <= 63 and offset % (1 << alignment) == 0,
+                f"Invalid fat Mach-O slice alignment: {label}")
+        require(offset >= table_end and 0 < length <= size - offset,
+                f"Invalid fat Mach-O slice bounds: {label}")
+        if bits == 64:
+            require(entry[28:32] == b"\0" * 4, f"Invalid reserved fat Mach-O field: {label}")
+        require((cpu, subtype) not in architectures, f"Duplicate fat Mach-O architecture: {label}")
+        require(all(offset + length <= start or finish <= offset for start, finish in ranges),
+                f"Overlapping fat Mach-O slices: {label}")
+        item = thin(offset, length)
+        require((item["cpuType"], item["cpuSubtype"]) == (cpu, subtype),
+                f"Fat Mach-O architecture does not match its slice: {label}")
+        architectures.add((cpu, subtype))
+        ranges.append((offset, offset + length))
+        result.append(item)
+    return result
+
+
+def scan_macho_private_api(read_at, size, label, *, required=False):
+    """Scan all bytes of every validated slice, including stripped/dlsym strings."""
+    slices = macho_slices(read_at, size, label)
+    require(not required or bool(slices), f"Expected a Mach-O executable: {label}")
+    spellings = tuple((symbol, spelling) for symbol in PRIVATE_API_SYMBOLS
+                      for spelling in (symbol, b"_" + symbol))
+    overlap = max(len(spelling) for _, spelling in spellings) - 1
+    identifier = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+    for item in slices:
+        start, end = item["offset"], item["offset"] + item["bytes"]
+        position, carry = start, b""
+        while position < end:
+            count = min(1024 * 1024, end - position)
+            chunk = read_at(position, count)
+            require(len(chunk) == count, f"Truncated Mach-O while scanning: {label}")
+            window, window_start = carry + chunk, position - len(carry)
+            for symbol, spelling in spellings:
+                found = window.find(spelling)
+                while found >= 0:
+                    offset = window_start + found
+                    before = read_at(offset - 1, 1) if offset > start else b""
+                    after_offset = offset + len(spelling)
+                    after = read_at(after_offset, 1) if after_offset < end else b""
+                    require((offset == start or len(before) == 1) and (after_offset == end or len(after) == 1),
+                            f"Truncated Mach-O symbol boundary: {label}")
+                    if (not before or before[0] not in identifier) and (not after or after[0] not in identifier):
+                        raise Failure(f"Forbidden private API {symbol.decode('ascii')} in {label}, "
+                                      f"slice {item['cpuType']:#x}/{item['cpuSubtype']:#x}, file offset {offset}")
+                    found = window.find(spelling, found + 1)
+            carry = window[-overlap:]
+            position += count
+    return slices
+
+
+def verify_macho_private_api(path, *, required=True):
+    """Read one stable regular FD; compiler hardlinks are allowed, symlinks are not."""
+    path = Path(path)
+    fields = ("st_dev", "st_ino", "st_uid", "st_nlink", "st_mode",
+              "st_size", "st_mtime_ns", "st_ctime_ns")
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError as error:
+        raise Failure(f"Cannot read private-API gate input: {path}") from error
+    try:
+        before = os.fstat(descriptor)
+        require(stat.S_ISREG(before.st_mode), f"Private-API gate input is not regular: {path}")
+        slices = scan_macho_private_api(lambda offset, count: os.pread(descriptor, count, offset),
+                                       before.st_size, str(path), required=required)
+        after = os.fstat(descriptor)
+        leaf = path.lstat()
+        require(all(getattr(before, field) == getattr(after, field) == getattr(leaf, field) for field in fields),
+                f"Binary changed during private-API scan: {path}")
+        return slices
+    finally:
+        os.close(descriptor)
+
+
+def verify_app_private_api(app):
+    """Inspect every regular payload file, so extensions/dylibs cannot bypass the gate."""
+    app = Path(app)
+    require(not app.is_symlink() and app.is_dir(), "Private-API gate requires a real app directory")
+    scanned = []
+    for path in sorted(app.rglob("*")):
+        mode = path.lstat().st_mode
+        require(not stat.S_ISLNK(mode), f"Unexpected symlink in private-API gate: {path}")
+        if stat.S_ISDIR(mode):
+            continue
+        require(stat.S_ISREG(mode), f"Unexpected special file in private-API gate: {path}")
+        slices = verify_macho_private_api(path, required=False)
+        if slices:
+            scanned.append({"path": str(path.relative_to(app)), "slices": slices})
+    require(bool(scanned), "App contains no Mach-O payload")
+    return scanned
+
+
 def run(argv, *, env=None, cwd=None, log=None):
     """Never echo command arguments: profile paths and tool output may be private."""
     try:
@@ -278,6 +444,7 @@ def create_build_receipt(root, config, arch, number, env, target, run_dir):
     for triple in TARGETS[arch]:
         path = target / triple / "release" / crate
         require(os.access(path, os.X_OK), f"MAS build produced no executable for {triple}")
+        verify_macho_private_api(path)
         binaries.append({"target": triple, "file": file_proof(path)})
     require(cargo_proof == {"invocationPath": cargo, "resolvedExecutable": file_proof(Path(cargo).resolve())}, "Cargo executable changed during the MAS build")
     receipt = {"schema": "mixel.mas-build.v1", "app": slug, "crate": crate, "arch": arch, "version": load_version(root), "buildNumber": number, "sourceCommit": env[f"{prefix}_BUILD_SHA"], "source": before, "externalFonts": fonts, "environment": captured_build_env(env, prefix), "helper": file_proof(Path(__file__).resolve()), "cargo": cargo_proof, "commands": executions, "binaries": binaries, "recordedAtUtc": utc_now()}
@@ -322,6 +489,8 @@ def checked_build_receipt(path, expected_sha, root, config, arch, number, env, t
         require(execution.get("compilerArtifact") == artifact, "MAS compiler artifact receipt differs from the actual Cargo JSON transcript")
     binaries = [{"target": triple, "file": file_proof(target / triple / "release" / crate)} for triple in TARGETS[arch]]
     require(receipt.get("binaries") == binaries, "MAS executable no longer matches the trusted build receipt")
+    for item in binaries:
+        verify_macho_private_api(item["file"]["path"])
     require(proof == file_proof(path), "MAS build receipt changed while checking it")
     return receipt
 
@@ -475,6 +644,28 @@ def generated_info(here, config, version, number, source_sha, encryption, arch):
     return value
 
 
+_MAS_STAGING = None
+MAS_STAGING_SHA256 = "f908afa23799f64f260f0ff6797419a9adfaa6fe48851b9c6669a3206bae4d04"
+
+
+def _staging_module():
+    """Load the adjacent byte-pinned module, including under Python -I -B."""
+    global _MAS_STAGING
+    if _MAS_STAGING is None:
+        import importlib.util
+        path = Path(__file__).absolute().with_name("mas_staging.py")
+        before = file_proof(path)
+        require(before["sha256"] == MAS_STAGING_SHA256, "Adjacent MAS staging module differs from reviewed source")
+        data = path.read_bytes()
+        require(digest(data) == MAS_STAGING_SHA256 and file_proof(path) == before, "MAS staging source changed during loading")
+        spec = importlib.util.spec_from_file_location("mixel_mas_staging", path)
+        require(spec is not None and spec.loader is not None, "Cannot create explicit adjacent staging module spec")
+        module = importlib.util.module_from_spec(spec)
+        exec(compile(data, str(path), "exec"), module.__dict__)
+        _MAS_STAGING = module
+    return _MAS_STAGING
+
+
 def copy_legal(root, resources, env):
     destination = resources / "Licenses"
     destination.mkdir()
@@ -507,6 +698,11 @@ def copy_legal(root, resources, env):
             require(file_proof(target)["sha256"] == original["sha256"] and file_proof(source) == original, "Staged external font license differs from its source")
             copied.append("external-craft-fonts/" + str(source.relative_to(fonts)))
     require(any(name.startswith("LICENSE") for name in copied), "No application source license was staged")
+    staging = _staging_module()
+    try:
+        copied.extend(staging.copy_additional_legal(root, resources, copied))
+    except staging.StagingFailure as error:
+        raise Failure(str(error)) from None
     return copied
 
 
@@ -586,14 +782,13 @@ def package(root, config, args, env):
     require(actual_arch == expected_arch, "Staged executable has unexpected architecture slices")
     shutil.copyfile(root / "assets" / "app-icon" / f"{crate}.icns", resources / f"MIXEL {title}.icns")
     legal = copy_legal(root, resources, build_env)
+    model_reuse = None
     if slug == "print":
-        models = resources / "models"
-        models.mkdir()
-        # Reuse the product's attributed, hash-verified OCR model staging. This
-        # also runs Cargo for xtask, including when app --skip-build is selected.
-        model_env = dict(build_env)
-        model_env["DIST"] = str(work / "model-helper-dist")
-        run(["/bin/bash", "-c", 'set -euo pipefail; . "$1/packaging/env.sh"; stage_models "$2"', "mixel-mas-models", str(root), str(models)], env=model_env, cwd=root, log=work / "ocr-models.log")
+        staging = _staging_module()
+        try:
+            model_reuse = staging.stage_retained_print_models(resources / "models", build_env)
+        except staging.StagingFailure as error:
+            raise Failure(str(error)) from None
     info = generated_info(here, config, version, number, receipt["sourceCommit"], encryption, args.arch)
     (contents / "Info.plist").write_bytes(plistlib.dumps(info, sort_keys=False))
     (contents / "PkgInfo").write_bytes(b"APPL????")
@@ -610,6 +805,7 @@ def package(root, config, args, env):
         require(not staged.is_symlink(), "Unexpected symlink while normalizing new app permissions")
         staged.chmod(0o755 if staged.is_dir() or staged == executable else 0o644)
     run([TOOLS["plutil"], "-lint", str(contents / "Info.plist"), str(resources / "PrivacyInfo.xcprivacy"), str(entitlement_path)], log=work / "plist-validation.log")
+    verify_app_private_api(app)
     for index, subject in enumerate((executable, app), 1):
         run([TOOLS["codesign"], "--force", "--sign", signing["identity"], "--timestamp", "--options", "runtime", "--entitlements", str(entitlement_path), str(subject)], log=work / f"codesign-{index}.log")
     verify_app(app, entitlements, signing["identity"], work, "staged")
@@ -625,6 +821,7 @@ def package(root, config, args, env):
     candidates = list(expanded.rglob(f"MIXEL {title}.app"))
     require(len(candidates) == 1 and candidates[0].is_dir(), "Installer must contain exactly the intended application")
     require(tree_proof(candidates[0]) == staged_tree, "Expanded installer app differs from the signed staged app")
+    verify_app_private_api(candidates[0])
     verify_app(candidates[0], entitlements, signing["identity"], work, "expanded")
     require(staged_tree == tree_proof(app), "Staged app changed while building the installer")
     require(receipt["source"] == source_catalogue(root), "Source changed during packaging")
@@ -641,6 +838,8 @@ def package(root, config, args, env):
         shutil.copyfileobj(source, output)
     require(file_proof(final_pkg)["sha256"] == file_proof(internal_pkg)["sha256"], "Final installer copy differs from verified package")
     result = {"schema": "mixel.mas-package.v1", "recordedAtUtc": utc_now(), "app": slug, "version": version, "buildNumber": number, "arch": args.arch, "buildReceipt": receipt_proof, "sourceFingerprint": receipt["source"]["sha256"], "profile": signing["policy"], "profileInput": signing["profileProof"], "profileMetadata": signing["metadataProof"], "privacyManifest": privacy[1], "usesNonExemptEncryption": encryption, "entitlements": entitlements, "legalFiles": legal, "signedAppFiles": staged_tree, "package": file_proof(final_pkg), "checks": {"sourceAndMasBuildReceipt": "passed", "provisioningProfile": "passed", "actualArchitectures": sorted(actual_arch), "exactCodeEntitlements": "passed", "distributionCertificate": "passed", "installerSignature": "passed", "expandedAppByteAndModeEquality": "passed", "expandedAppCodesign": "passed"}, "notPerformed": ["App Store validation", "upload", "TestFlight processing", "sandbox runtime acceptance", "public release"]}
+    if model_reuse is not None:
+        result["printModelsReuse"] = model_reuse
     output_record = final_pkg.with_name(final_pkg.name + ".provenance.json")
     write_json(output_record, result)
     print(f"==> MAS package verified: {final_pkg}\n==> Provenance: {output_record}\n==> No store request was sent; runtime and TestFlight acceptance remain separate", flush=True)

@@ -101,7 +101,7 @@ debug = 0
 
 # Opt-in cancelable macOS termination on the pinned winit 0.30 line.
 [patch.crates-io]
-winit = { git = "https://github.com/skylartaylor/winit.git", rev = "3d51077fd1a966f84df9ef287839dc84fd5b4ca7" }
+winit = { path = "mixel/vendor/winit" }
 
 # Maintained zbus 6 protocol/accessibility dependency ports; source provenance is retained alongside each full package.
 accesskit_atspi_common = { path = "mixel/vendor/accesskit_atspi_common" }
