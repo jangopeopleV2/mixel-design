@@ -1,11 +1,14 @@
 # Mac App Store variant
 
+Read [MAS private API fix and packaging contract](MAS-PRIVATE-API-FIX.md) for the
+local winit patch, shared 31 focused regressions, and retained Print model inputs.
+
 `packaging/macos/package.sh --mas` selects a separate sandboxed Mac App Store
 variant. The existing command without `--mas` keeps its Developer ID DMG and CLI
 ZIP path. MAS output is a signed `.pkg`; this command performs no App Store API
 request, upload, notarization, stapling, DMG construction, or public release.
 
-Use Python 3.9 or later and the normal native Rust/macOS build toolchain. The
+Use Python 3.14 with `-I -B` and the normal native Rust/macOS build toolchain. The
 helper is identical across all seven product repositories and selects the product
 from the checkout directory name. App Store acceptance and a working sandbox
 runtime are separate verification steps after packaging.
@@ -16,7 +19,7 @@ Validate deployment policy and generated app metadata without building or
 contacting Apple:
 
 ```sh
-python3 -B packaging/macos/test_mas_package.py
+python3.14 -I -B packaging/macos/test_mas_package.py
 ```
 
 Build the desktop package with its `mac-app-store` feature and release profile:
@@ -110,9 +113,16 @@ and explicit build number, with the explicit encryption declaration. Legal notic
 and embedded-font licenses are staged before signing, including the default
 vendored CJK font licenses, any external `CRAFT_FONTS_DIR` licenses, and pinned
 `mixel/third-party` dependency license copies (including apple-scoped-bookmarks).
-Every staged legal/font license is checked against its source hash. Print uses
-the existing attributed, hash-verified `stage_models` helper for OCR resources;
-that helper runs Cargo for xtask even with app `--skip-build`.
+Every staged legal/font license is checked against its source hash. Print copies
+only the retained exact five-file RTEN OCR payload from the accepted Print 0.7.1,
+build 2, arm64 app. Set `MACOS_MAS_PRINT_MODELS_DIR` to its retained
+`MIXEL Print.app/Contents/Resources/models` directory,
+`MACOS_MAS_PRINT_MODELS_PROVENANCE` to its accepted package provenance, and
+`MACOS_MAS_PRINT_MODELS_PROVENANCE_SHA256` to the independently recorded SHA256.
+The two models, their two `.LICENCE.txt` files, and `ATTRIBUTION.txt` must match
+accepted membership, hashes, and 0644 modes. Packaging creates a new destination;
+it never invokes `stage_models`, Cargo xtask, extraction, or a model download
+fallback, including with `--skip-build`.
 
 The common policy enables App Sandbox, user-selected read/write, app-scoped
 bookmarks, and outgoing network connections. Photo, Vector, and Print also enable
